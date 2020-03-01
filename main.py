@@ -26,8 +26,9 @@ class OutputFiles(defaultdict):
         super(OutputFiles, self).__init__(*args, **kwargs)
 
     def __missing__(self, key):
-        Path(os.path.join(self.temp_dir, os.path.dirname(key))).mkdir(parents=True, exist_ok=True)
-        ret = self[key] = self.stack.enter_context(open(key, 'wb'))
+        path = os.path.join(self.temp_dir, key)
+        Path(os.path.dirname(path)).mkdir(parents=True, exist_ok=True)
+        ret = self[key] = self.stack.enter_context(open(path, 'wb'))
         return ret
 
 prefix = {
