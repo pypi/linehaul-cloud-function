@@ -48,8 +48,7 @@ def process_fastly_log(data, context):
         None; the output is written to Stackdriver Logging
     """
     client = storage.Client()
-    bucket = client.bucket(data["bucket"])
-    blob = bucket.blob(data["name"])
+    blob = client.bucket(data["bucket"]).get_blob(data["name"])
     identifier = os.path.basename(data["name"]).split("-")[-1].split(".")[0]
     _, temp_local_filename = tempfile.mkstemp()
     temp_output_dir = tempfile.mkdtemp()
