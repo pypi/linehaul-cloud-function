@@ -46,7 +46,7 @@ def process_fastly_log(data, context):
     client = storage.Client()
     bucket = client.bucket(data['bucket'])
     blob = bucket.blob(data['name'])
-    identifier = os.path.basename(blob).split('-')[-1].split('.')[0]
+    identifier = os.path.basename(data['name']).split('-')[-1].split('.')[0]
     blob.download_to_filename(f'{identifier}.gz')
 
     with ExitStack() as stack:
