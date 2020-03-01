@@ -68,11 +68,11 @@ def process_fastly_log(data, context):
                     ].write(json.dumps(_cattr.unstructure(res)).encode() + b"\n")
                 else:
                     output_files[f"results/unprocessed/{identifier}.txt"].write(
-                        line.encode() + b"\n"
+                        line.encode()
                     )
             except Exception as e:
                 output_files[f"results/unprocessed/{identifier}.txt"].write(
-                    line.encode() + b"\n"
+                    line.encode()
                 )
         result_files = output_files.keys()
 
