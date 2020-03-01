@@ -1,0 +1,4 @@
+arrow==0.15.5
+cattrs==1.0.0
+packaging==20.1
+pyparsing==2.4.6
