@@ -68,9 +68,10 @@ def process_fastly_log(data, context):
             except Exception as e:
                 output_files[f'results/unprocessed/{identifier}.txt'].write(line.encode() + b'\n')
 
-        print(output_files.keys())
-    
-
+        bucket = client.bucket('linehaul-bigquery-data-staging')
+        for filename in output_files.keys():
+            blob = bucket.blob(os.path.relpath(filename, 'results'))
+            blob.upload_from_filename(os.path.join(temp_output_dir, filename))
 
 
 #with open('downloads-result.json', 'wb') as wf:
