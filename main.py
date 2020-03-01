@@ -5,6 +5,7 @@ import os
 import json
 import gzip
 import sys
+import tempfile
 
 from collections import defaultdict
 from contextlib import ExitStack
@@ -19,12 +20,13 @@ _cattr.register_unstructure_hook(arrow.Arrow, lambda o: o.format('YYYY-MM-DD HH:
 
 class OutputFiles(defaultdict):
 
-    def __init__(self, stack, *args, **kwargs):
+    def __init__(self, temp_dir, stack, *args, **kwargs):
+        self.temp_dir = temp_dir
         self.stack = stack
         super(OutputFiles, self).__init__(*args, **kwargs)
 
     def __missing__(self, key):
-        Path(os.path.dirname(key)).mkdir(parents=True, exist_ok=True)
+        Path(os.path.join(self.temp_dir, os.path.dirname(key))).mkdir(parents=True, exist_ok=True)
         ret = self[key] = self.stack.enter_context(open(key, 'wb'))
         return ret
 
@@ -47,11 +49,13 @@ def process_fastly_log(data, context):
     bucket = client.bucket(data['bucket'])
     blob = bucket.blob(data['name'])
     identifier = os.path.basename(data['name']).split('-')[-1].split('.')[0]
-    blob.download_to_filename(f'{identifier}.gz')
+    _, temp_local_filename = tempfile.mkstemp()
+    temp_output_dir = tempfile.mkdtemp()
+    blob.download_to_filename(temp_local_filename)
 
     with ExitStack() as stack:
-        f = stack.enter_context(gzip.open(f'{identifier}.gz', 'rt'))
-        output_files = OutputFiles(stack)
+        f = stack.enter_context(gzip.open(temp_local_filename, 'rt'))
+        output_files = OutputFiles(temp_output_dir, stack)
         for line in f:
             try:
                 res = parse(line)
