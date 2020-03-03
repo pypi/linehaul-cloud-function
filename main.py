@@ -39,11 +39,11 @@ prefix = {Simple.__name__: "simple_requests", Download.__name__: "downloads"}
 
 def process_fastly_log(data, context):
     client = storage.Client()
-    blob = client.bucket(data["bucket"]).get_blob(data["name"])
+    bob_logs_log_blob = client.bucket(data["bucket"]).get_blob(data["name"])
     identifier = os.path.basename(data["name"]).split("-", 3)[-1].rstrip(".log.gz")
     _, temp_local_filename = tempfile.mkstemp()
     temp_output_dir = tempfile.mkdtemp()
-    blob.download_to_filename(temp_local_filename)
+    bob_logs_log_blob.download_to_filename(temp_local_filename)
 
     with ExitStack() as stack:
         f = stack.enter_context(gzip.open(temp_local_filename, "rt"))
@@ -70,3 +70,5 @@ def process_fastly_log(data, context):
     for filename in result_files:
         blob = bucket.blob(os.path.relpath(filename, "results"))
         blob.upload_from_filename(os.path.join(temp_output_dir, filename))
+
+    bob_logs_log_blob.delete()
