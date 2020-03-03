@@ -3,3 +3,4 @@ cattrs==1.0.0
 packaging==20.1
 pyparsing==2.4.6
 google-cloud-storage
+google-cloud-bigquery

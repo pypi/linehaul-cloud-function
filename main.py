@@ -13,7 +13,7 @@ from pathlib import Path
 
 from linehaul.events.parser import parse, Download, Simple
 
-from google.cloud import storage
+from google.cloud import bigquery, storage
 
 _cattr = cattr.Converter()
 _cattr.register_unstructure_hook(
@@ -38,8 +38,10 @@ prefix = {Simple.__name__: "simple_requests", Download.__name__: "downloads"}
 
 
 def process_fastly_log(data, context):
-    client = storage.Client()
-    bob_logs_log_blob = client.bucket(data["bucket"]).get_blob(data["name"])
+    storage_client = storage.Client()
+    biquery_client = bigquery.Client()
+
+    bob_logs_log_blob = storage_client.bucket(data["bucket"]).get_blob(data["name"])
     identifier = os.path.basename(data["name"]).split("-", 3)[-1].rstrip(".log.gz")
     _, temp_local_filename = tempfile.mkstemp()
     temp_output_dir = tempfile.mkdtemp()
@@ -66,9 +68,25 @@ def process_fastly_log(data, context):
                 )
         result_files = output_files.keys()
 
-    bucket = client.bucket(os.environ.get('RESULT_BUCKET'))
+    bucket = storage_client.bucket(os.environ.get("RESULT_BUCKET"))
+    result_uris = []
     for filename in result_files:
         blob = bucket.blob(os.path.relpath(filename, "results"))
         blob.upload_from_filename(os.path.join(temp_output_dir, filename))
+        result_uris.append(blob.self_link)
+
+    dataset_ref = biquery_client.dataset(os.environ.get("BIGQUERY_DATASET"))
+    job_config = bigquery.LoadJobConfig()
+    job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
+    job_config.ignore_unknown_values = True
+
+    uri = "gs://cloud-samples-data/bigquery/us-states/us-states.json"
+    load_job = client.load_table_from_uri(
+        result_uris,
+        dataset_ref.table(os.environ.get("BIGQUERY_TABLE")),
+        job_id_prefix="linehaul_",
+        location="US",  # Location must match that of the destination dataset.
+        job_config=job_config,
+    )
 
     bob_logs_log_blob.delete()
