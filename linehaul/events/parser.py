@@ -228,7 +228,7 @@ def parse(message):
         if ua is None:
             return  # Ignored user agents mean we'll skip trying to log this event
     except user_agents.UnknownUserAgentError:
-        print(f"Unknown User agent: {parsed.user_agent}")
+        pass
     else:
         result = attr.evolve(result, details=ua)
 
