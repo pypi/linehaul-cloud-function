@@ -75,7 +75,7 @@ def process_fastly_log(data, context):
                 )
         result_files = output_files.keys()
 
-    bucket = client.bucket("linehaul-bigquery-data-staging")
+    bucket = client.bucket(os.environ.get('RESULT_BUCKET'))
     for filename in result_files:
         blob = bucket.blob(os.path.relpath(filename, "results"))
         blob.upload_from_filename(os.path.join(temp_output_dir, filename))
