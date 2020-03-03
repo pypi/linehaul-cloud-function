@@ -38,15 +38,6 @@ prefix = {Simple.__name__: "simple_requests", Download.__name__: "downloads"}
 
 
 def process_fastly_log(data, context):
-    """Background Cloud Function to be triggered by Cloud Storage.
-       This generic function logs relevant data when a file is changed.
-
-    Args:
-        data (dict): The Cloud Functions event payload.
-        context (google.cloud.functions.Context): Metadata of triggering event.
-    Returns:
-        None; the output is written to Stackdriver Logging
-    """
     client = storage.Client()
     blob = client.bucket(data["bucket"]).get_blob(data["name"])
     identifier = os.path.basename(data["name"]).split("-", 3)[-1].rstrip(".log.gz")
@@ -79,25 +70,3 @@ def process_fastly_log(data, context):
     for filename in result_files:
         blob = bucket.blob(os.path.relpath(filename, "results"))
         blob.upload_from_filename(os.path.join(temp_output_dir, filename))
-
-
-# with open('downloads-result.json', 'wb') as wf:
-#    with gzip.open('logs/downloads/2020/02/29/22/00/2020-02-29T22:00:00.000-RR11GaIPOBYjuohiUdWt.log.gz', 'rt') as f:
-#        for line in f:
-#            try:
-#                res = parse(line)
-#                if res is not None:
-#                    wf.write(json.dumps(_cattr.unstructure(res)).encode() + b'\n')
-#            except:
-#                print(line)
-
-# with open('simple-result.json', 'wb') as wf:
-#    with gzip.open('logs/simple/2020/02/29/22/00/2020-02-29T22:00:00.000-J6jH0weiN3a7yBa6zZY-.log.gz', 'rt') as f:
-#        for line in f:
-#            try:
-#                res = parse(line)
-#                if res is not None:
-#                    wf.write(json.dumps(_cattr.unstructure(res)).encode() + b'\n')
-#            except Exception as e:
-#                print(e)
-#                print(line)
