@@ -49,7 +49,7 @@ def process_fastly_log(data, context):
     """
     client = storage.Client()
     blob = client.bucket(data["bucket"]).get_blob(data["name"])
-    identifier = os.path.basename(data["name"]).split("-")[-1].split(".")[0]
+    identifier = os.path.basename(data["name"]).split("-", 3)[-1].rstrip(".log.gz")
     _, temp_local_filename = tempfile.mkstemp()
     temp_output_dir = tempfile.mkdtemp()
     blob.download_to_filename(temp_local_filename)
