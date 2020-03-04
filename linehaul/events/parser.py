@@ -153,6 +153,7 @@ class Download:
 
     timestamp = attr.ib(type=arrow.Arrow)
     url = attr.ib(validator=attr.validators.instance_of(str))
+    project = attr.ib(validator=attr.validators.instance_of(str))
     file = attr.ib(type=File)
     tls_protocol = attr.ib(
         default=None,
@@ -216,6 +217,7 @@ def parse(message):
     data["file"]["type"] = _value_or_none(parsed.package_type)
 
     if parsed[0] == 'download':
+        data["project"] = _value_or_none(parsed.project_name)
         result = _cattr.structure(data, Download)
     elif parsed[0] == 'simple':
         data["project"] = parsed.url.split('/')[2]
