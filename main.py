@@ -88,5 +88,6 @@ def process_fastly_log(data, context):
         location="US",  # Location must match that of the destination dataset.
         job_config=job_config,
     )
+    print(load_job.job_id)
 
     bob_logs_log_blob.delete()
