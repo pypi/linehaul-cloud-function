@@ -67,6 +67,8 @@ def process_fastly_log(data, context):
                 output_files[unprocessable].write(line)
         result_files = output_files.keys()
 
+    os.remove(temp_local_filename)
+
     dataset = os.environ.get("BIGQUERY_DATASET")
     simple_table = os.environ.get("BIGQUERY_SIMPLE_TABLE")
     download_table = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
