@@ -71,9 +71,10 @@ def process_fastly_log(data, context):
     bucket = storage_client.bucket(os.environ.get("RESULT_BUCKET"))
     result_uris = []
     for filename in [rf for rf in result_files if not rf.startswith('results/unprocessed')]:
-        blob = bucket.blob(os.path.relpath(filename, "results"))
+        blob_name = os.path.relpath(filename, "results")
+        blob = bucket.blob(blob_name)
         blob.upload_from_filename(os.path.join(temp_output_dir, filename))
-        result_uris.append(f'gs://{os.environ.get("RESULT_BUCKET")}/{filename}')
+        result_uris.append(f'gs://{os.environ.get("RESULT_BUCKET")}/{blob_name}')
 
     dataset_ref = bigquery_client.dataset(os.environ.get("BIGQUERY_DATASET"))
     job_config = bigquery.LoadJobConfig()
