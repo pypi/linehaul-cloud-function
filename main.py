@@ -81,7 +81,7 @@ def process_fastly_log(data, context):
     job_config.ignore_unknown_values = True
 
     uri = "gs://cloud-samples-data/bigquery/us-states/us-states.json"
-    load_job = client.load_table_from_uri(
+    load_job = bigquery_client.load_table_from_uri(
         result_uris,
         dataset_ref.table(os.environ.get("BIGQUERY_TABLE")),
         job_id_prefix="linehaul_",
