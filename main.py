@@ -70,7 +70,7 @@ def process_fastly_log(data, context):
 
     bucket = storage_client.bucket(os.environ.get("RESULT_BUCKET"))
     result_uris = []
-    for filename in result_files:
+    for filename in [rf for rf in result_files if not rf.startswith('results/unprocessed')]:
         blob = bucket.blob(os.path.relpath(filename, "results"))
         blob.upload_from_filename(os.path.join(temp_output_dir, filename))
         result_uris.append(f'gs://{os.environ.get("RESULT_BUCKET")}/{os.path.join(temp_output_dir, filename)}')
