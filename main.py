@@ -48,11 +48,11 @@ def process_fastly_log(data, context):
     bob_logs_log_blob.download_to_filename(temp_local_filename)
 
     with ExitStack() as stack:
-        f = stack.enter_context(gzip.open(temp_local_filename, "rt"))
+        f = stack.enter_context(gzip.open(temp_local_filename, "rb"))
         output_files = OutputFiles(temp_output_dir, stack)
         for line in f:
             try:
-                res = parse(line)
+                res = parse(line.decode())
                 if res is not None:
                     partition = res.timestamp.format("YYYYMMDD")
                     output_files[
@@ -60,11 +60,11 @@ def process_fastly_log(data, context):
                     ].write(json.dumps(_cattr.unstructure(res)).encode() + b"\n")
                 else:
                     output_files[f"results/unprocessed/{identifier}.txt"].write(
-                        line.encode()
+                        line
                     )
             except Exception as e:
                 output_files[f"results/unprocessed/{identifier}.txt"].write(
-                    line.encode()
+                    line
                 )
         result_files = output_files.keys()
 
