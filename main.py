@@ -67,13 +67,6 @@ def process_fastly_log(data, context):
                 output_files[unprocessable].write(line)
         result_files = output_files.keys()
 
-    bucket = storage_client.bucket(os.environ.get("RESULT_BUCKET"))
-    for result_file in result_files:
-        blob_name = os.path.relpath(result_file, "results")
-        if blob_name.startswith("unprocessed/"):
-            blob = bucket.blob(blob_name)
-            blob.upload_from_filename(os.path.join(temp_output_dir, result_file))
-
     dataset = os.environ.get("BIGQUERY_DATASET")
     table = os.environ.get("BIGQUERY_TABLE")
     dataset_ref = bigquery_client.dataset(dataset)
@@ -93,5 +86,12 @@ def process_fastly_log(data, context):
                 )
             load_job.result()
             print(f"Loaded {load_job.output_rows} rows into {dataset}:{table}")
+
+    bucket = storage_client.bucket(os.environ.get("RESULT_BUCKET"))
+    for result_file in result_files:
+        blob_name = os.path.relpath(result_file, "results")
+        if blob_name.startswith("unprocessed/"):
+            blob = bucket.blob(blob_name)
+            blob.upload_from_filename(os.path.join(temp_output_dir, result_file))
 
     bob_logs_log_blob.delete()
