@@ -39,7 +39,7 @@ prefix = {Simple.__name__: "simple_requests", Download.__name__: "downloads"}
 
 def process_fastly_log(data, context):
     storage_client = storage.Client()
-    biquery_client = bigquery.Client()
+    bigquery_client = bigquery.Client()
 
     bob_logs_log_blob = storage_client.bucket(data["bucket"]).get_blob(data["name"])
     identifier = os.path.basename(data["name"]).split("-", 3)[-1].rstrip(".log.gz")
@@ -75,7 +75,7 @@ def process_fastly_log(data, context):
         blob.upload_from_filename(os.path.join(temp_output_dir, filename))
         result_uris.append(blob.self_link)
 
-    dataset_ref = biquery_client.dataset(os.environ.get("BIGQUERY_DATASET"))
+    dataset_ref = bigquery_client.dataset(os.environ.get("BIGQUERY_DATASET"))
     job_config = bigquery.LoadJobConfig()
     job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
     job_config.ignore_unknown_values = True
