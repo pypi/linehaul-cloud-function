@@ -35,7 +35,7 @@ class OutputFiles(defaultdict):
         return ret
 
 
-prefix = {Simple.__name__: "simple_requests", Download.__name__: "downloads"}
+prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads"}
 
 
 def process_fastly_log(data, context):
@@ -68,7 +68,8 @@ def process_fastly_log(data, context):
         result_files = output_files.keys()
 
     dataset = os.environ.get("BIGQUERY_DATASET")
-    table = os.environ.get("BIGQUERY_TABLE")
+    simple_table = os.environ.get("BIGQUERY_SIMPLE_TABLE")
+    download_table = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
     dataset_ref = bigquery_client.dataset(dataset)
     job_config = bigquery.LoadJobConfig()
     job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
@@ -76,6 +77,10 @@ def process_fastly_log(data, context):
 
     for result_file in result_files:
         if not os.path.relpath(result_file, "results").startswith("unprocessed"):
+            if os.path.relpath(result_file, "results").startswith(prefix[Simple.__name__]):
+                table = simple_table
+            if os.path.relpath(result_file, "results").startswith(prefix[Download.__name__]):
+                table = download_table
             with open(os.path.join(temp_output_dir, result_file), 'rb') as f:
                 load_job = bigquery_client.load_table_from_file(
                     f,
