@@ -68,27 +68,30 @@ def process_fastly_log(data, context):
         result_files = output_files.keys()
 
     bucket = storage_client.bucket(os.environ.get("RESULT_BUCKET"))
-    result_uris = []
-    for filename in result_files:
-        blob_name = os.path.relpath(filename, "results")
-        blob = bucket.blob(blob_name)
-        blob.upload_from_filename(os.path.join(temp_output_dir, filename))
-        if not blob_name.startswith("unprocessed/"):
-            result_uris.append(f'gs://{os.environ.get("RESULT_BUCKET")}/{blob_name}')
+    for result_file in result_files:
+        blob_name = os.path.relpath(result_file, "results")
+        if blob_name.startswith("unprocessed/"):
+            blob = bucket.blob(blob_name)
+            blob.upload_from_filename(os.path.join(temp_output_dir, result_file))
 
-    dataset_ref = bigquery_client.dataset(os.environ.get("BIGQUERY_DATASET"))
+    dataset = os.environ.get("BIGQUERY_DATASET")
+    table = os.environ.get("BIGQUERY_TABLE")
+    dataset_ref = bigquery_client.dataset(dataset)
     job_config = bigquery.LoadJobConfig()
     job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
     job_config.ignore_unknown_values = True
 
-    uri = "gs://cloud-samples-data/bigquery/us-states/us-states.json"
-    load_job = bigquery_client.load_table_from_uri(
-        result_uris,
-        dataset_ref.table(os.environ.get("BIGQUERY_TABLE")),
-        job_id_prefix="linehaul_",
-        location="US",  # Location must match that of the destination dataset.
-        job_config=job_config,
-    )
-    print(load_job.job_id)
+    for result_file in result_files:
+        if not os.path.relpath(result_file, "results").startswith("unprocessed"):
+            with open(os.path.join(temp_output_dir, result_file)) as f:
+                load_job = bigquery_client.load_table_from_file(
+                    f,
+                    dataset_ref.table(table),
+                    job_id_prefix="linehaul_",
+                    location="US",
+                    job_config=job_config,
+                )
+            load_job.result()
+            print(f"Loaded {load_job.output_rows} rows into {dataset}:{table}")
 
     bob_logs_log_blob.delete()
