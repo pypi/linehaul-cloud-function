@@ -76,7 +76,7 @@ def process_fastly_log(data, context):
 
     for result_file in result_files:
         if not os.path.relpath(result_file, "results").startswith("unprocessed"):
-            with open(os.path.join(temp_output_dir, result_file)) as f:
+            with open(os.path.join(temp_output_dir, result_file), 'rb') as f:
                 load_job = bigquery_client.load_table_from_file(
                     f,
                     dataset_ref.table(table),
