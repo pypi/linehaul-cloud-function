@@ -43,6 +43,9 @@ def process_fastly_log(data, context):
     bigquery_client = bigquery.Client()
 
     bob_logs_log_blob = storage_client.bucket(data["bucket"]).get_blob(data["name"])
+    if bob_logs_log_blob is None:
+        # This has already been processed?
+        return
     identifier = os.path.basename(data["name"]).split("-", 3)[-1].rstrip(".log.gz")
     _, temp_local_filename = tempfile.mkstemp()
     temp_output_dir = tempfile.mkdtemp()
