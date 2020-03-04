@@ -1,6 +1,7 @@
 import arrow
 import cattr
 
+import datetime
 import os
 import json
 import gzip
@@ -50,6 +51,8 @@ def process_fastly_log(data, context):
     with ExitStack() as stack:
         f = stack.enter_context(gzip.open(temp_local_filename, "rb"))
         output_files = OutputFiles(temp_output_dir, stack)
+        default_partition = datetime.datetime.utcnow().strftime("%Y%m%d")
+        unprocessable = f"results/unprocessed/{default_partition}/{identifier}.txt"
         for line in f:
             try:
                 res = parse(line.decode())
@@ -59,13 +62,9 @@ def process_fastly_log(data, context):
                         f"results/{prefix[res.__class__.__name__]}/{partition}/{identifier}.json"
                     ].write(json.dumps(_cattr.unstructure(res)).encode() + b"\n")
                 else:
-                    output_files[f"results/unprocessed/{identifier}.txt"].write(
-                        line
-                    )
+                    output_files[unprocessable].write(line)
             except Exception as e:
-                output_files[f"results/unprocessed/{identifier}.txt"].write(
-                    line
-                )
+                output_files[unprocessable].write(line)
         result_files = output_files.keys()
 
     bucket = storage_client.bucket(os.environ.get("RESULT_BUCKET"))
@@ -74,7 +73,7 @@ def process_fastly_log(data, context):
         blob_name = os.path.relpath(filename, "results")
         blob = bucket.blob(blob_name)
         blob.upload_from_filename(os.path.join(temp_output_dir, filename))
-        if not blob_name.startswith('unprocessed/'):
+        if not blob_name.startswith("unprocessed/"):
             result_uris.append(f'gs://{os.environ.get("RESULT_BUCKET")}/{blob_name}')
 
     dataset_ref = bigquery_client.dataset(os.environ.get("BIGQUERY_DATASET"))
