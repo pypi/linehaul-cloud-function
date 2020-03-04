@@ -102,7 +102,11 @@ def process_fastly_log(data, context):
         blob_name = os.path.relpath(result_file, "results")
         if blob_name.startswith("unprocessed/"):
             blob = bucket.blob(blob_name)
-            blob.upload_from_filename(os.path.join(temp_output_dir, result_file))
+            try:
+                blob.upload_from_filename(os.path.join(temp_output_dir, result_file))
+            except:
+                # Be opprotunistic about unprocessed files...
+                pass
         os.remove(os.path.join(temp_output_dir, result_file))
 
     bob_logs_log_blob.delete()
