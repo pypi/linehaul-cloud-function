@@ -9,6 +9,7 @@ import sys
 import tempfile
 
 from collections import defaultdict
+from tempfile import NamedTemporaryFile
 from contextlib import ExitStack
 from pathlib import Path
 
@@ -22,18 +23,9 @@ _cattr.register_unstructure_hook(
 )
 
 
-class OutputFiles(defaultdict):
-    def __init__(self, temp_dir, stack, *args, **kwargs):
-        self.temp_dir = temp_dir
-        self.stack = stack
-        super(OutputFiles, self).__init__(*args, **kwargs)
-
-    def __missing__(self, key):
-        path = os.path.join(self.temp_dir, key)
-        Path(os.path.dirname(path)).mkdir(parents=True, exist_ok=True)
-        ret = self[key] = self.stack.enter_context(open(path, "wb"))
-        return ret
-
+DATASET = os.environ.get("BIGQUERY_DATASET")
+SIMPLE_TABLE = os.environ.get("BIGQUERY_SIMPLE_TABLE")
+DOWNLOAD_TABLE = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
 
 prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads"}
 
@@ -41,72 +33,93 @@ prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads
 def process_fastly_log(data, context):
     storage_client = storage.Client()
     bigquery_client = bigquery.Client()
+    identifier = os.path.basename(data["name"]).split("-", 3)[-1].rstrip(".log.gz")
+    default_partition = datetime.datetime.utcnow().strftime("%Y%m%d")
 
     bob_logs_log_blob = storage_client.bucket(data["bucket"]).get_blob(data["name"])
     if bob_logs_log_blob is None:
-        # This has already been processed?
-        return
-    identifier = os.path.basename(data["name"]).split("-", 3)[-1].rstrip(".log.gz")
-    _, temp_local_filename = tempfile.mkstemp()
-    temp_output_dir = tempfile.mkdtemp()
-    bob_logs_log_blob.download_to_filename(temp_local_filename)
+        return  # This has already been processed?
+
+    unprocessed_lines = 0
+    simple_lines = 0
+    download_lines = 0
 
     with ExitStack() as stack:
-        f = stack.enter_context(gzip.open(temp_local_filename, "rb"))
-        output_files = OutputFiles(temp_output_dir, stack)
-        default_partition = datetime.datetime.utcnow().strftime("%Y%m%d")
-        unprocessable = f"results/unprocessed/{default_partition}/{identifier}.txt"
-        for line in f:
+        input_file_obj = stack.enter_context(NamedTemporaryFile())
+        bob_logs_log_blob.download_to_file(input_file_obj)
+        input_file_obj.flush()
+
+        input_file = stack.enter_context(gzip.open(input_file_obj.name, "rb"))
+        unprocessed_file = stack.enter_context(NamedTemporaryFile())
+        simple_results_file = stack.enter_context(NamedTemporaryFile())
+        download_results_file = stack.enter_context(NamedTemporaryFile())
+
+        for line in input_file:
             try:
                 res = parse(line.decode())
                 if res is not None:
-                    partition = res.timestamp.format("YYYYMMDD")
-                    output_files[
-                        f"results/{prefix[res.__class__.__name__]}/{partition}/{identifier}.json"
-                    ].write(json.dumps(_cattr.unstructure(res)).encode() + b"\n")
+                    if res.__class__.__name__ == Simple.__name__:
+                        simple_results_file.write(
+                            json.dumps(_cattr.unstructure(res)).encode() + b"\n"
+                        )
+                        simple_lines += 1
+                    elif res.__class__.__name__ == Download.__name__:
+                        download_results_file.write(
+                            json.dumps(_cattr.unstructure(res)).encode() + b"\n"
+                        )
+                        download_lines += 1
+                    else:
+                        unprocessed_file.write(line)
+                        unprocessed_lines += 1
                 else:
-                    output_files[unprocessable].write(line)
+                    unprocessed_file.write(line)
+                    unprocessed_lines += 1
             except Exception as e:
-                output_files[unprocessable].write(line)
-        result_files = output_files.keys()
+                unprocessed_file.write(line)
+                unprocessed_lines += 1
 
-    os.remove(temp_local_filename)
+        total = unprocessed_lines + simple_lines + download_lines
+        print(
+            f"Processed gs://{data['bucket']}/{data['name']}: {total} lines, {simple_lines} simple_requests, {download_lines} file_downloads, {unprocessed_lines} unprocessed"
+        )
 
-    dataset = os.environ.get("BIGQUERY_DATASET")
-    simple_table = os.environ.get("BIGQUERY_SIMPLE_TABLE")
-    download_table = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
-    dataset_ref = bigquery_client.dataset(dataset)
-    job_config = bigquery.LoadJobConfig()
-    job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
-    job_config.ignore_unknown_values = True
+        dataset_ref = bigquery_client.dataset(DATASET)
 
-    for result_file in result_files:
-        if not os.path.relpath(result_file, "results").startswith("unprocessed"):
-            if os.path.relpath(result_file, "results").startswith(prefix[Simple.__name__]):
-                table = simple_table
-            if os.path.relpath(result_file, "results").startswith(prefix[Download.__name__]):
-                table = download_table
-            with open(os.path.join(temp_output_dir, result_file), 'rb') as f:
-                load_job = bigquery_client.load_table_from_file(
-                    f,
-                    dataset_ref.table(table),
-                    job_id_prefix="linehaul_",
-                    location="US",
-                    job_config=job_config,
-                )
+        job_config = bigquery.LoadJobConfig()
+        job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
+        job_config.ignore_unknown_values = True
+
+        if download_lines > 0:
+            load_job = bigquery_client.load_table_from_file(
+                download_results_file,
+                dataset_ref.table(DOWNLOAD_TABLE),
+                job_id_prefix="linehaul_file_downloads",
+                location="US",
+                job_config=job_config,
+                rewind=True,
+            )
             load_job.result()
-            print(f"Loaded {load_job.output_rows} rows into {dataset}:{table}")
+            print(f"Loaded {load_job.output_rows} rows into {DATASET}:{DOWNLOAD_TABLE}")
 
-    bucket = storage_client.bucket(os.environ.get("RESULT_BUCKET"))
-    for result_file in result_files:
-        blob_name = os.path.relpath(result_file, "results")
-        if blob_name.startswith("unprocessed/"):
-            blob = bucket.blob(blob_name)
+        if simple_lines > 0:
+            load_job = bigquery_client.load_table_from_file(
+                simple_results_file,
+                dataset_ref.table(SIMPLE_TABLE),
+                job_id_prefix="linehaul_file_downloads",
+                location="US",
+                job_config=job_config,
+                rewind=True,
+            )
+            load_job.result()
+            print(f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}")
+
+        bucket = storage_client.bucket(os.environ.get("RESULT_BUCKET"))
+        if unprocessed_lines > 0:
+            blob = bucket.blob(f"unprocessed/{default_partition}/{identifier}.txt")
             try:
-                blob.upload_from_filename(os.path.join(temp_output_dir, result_file))
+                blob.upload_from_file(unprocessed_file, rewind=True)
             except:
                 # Be opprotunistic about unprocessed files...
                 pass
-        os.remove(os.path.join(temp_output_dir, result_file))
 
-    bob_logs_log_blob.delete()
+        bob_logs_log_blob.delete()
