@@ -119,10 +119,14 @@ MESSAGE_v2 = V2_HEADER + REQUEST + PIPE + TLS + PIPE + PROJECT + PIPE + USER_AGE
 MESSAGE_v2.leaveWhitespace()
 
 V3_HEADER = L("download")
-MESSAGE_v3 = V3_HEADER + PIPE + REQUEST + PIPE + TLS + PIPE + PROJECT + PIPE + USER_AGENT
+MESSAGE_v3 = (
+    V3_HEADER + PIPE + REQUEST + PIPE + TLS + PIPE + PROJECT + PIPE + USER_AGENT
+)
 
 SIMPLE_HEADER = L("simple")
-MESSAGE_SIMPLE = SIMPLE_HEADER + PIPE + REQUEST + PIPE + TLS + PIPE + PIPE + PIPE + PIPE + USER_AGENT
+MESSAGE_SIMPLE = (
+    SIMPLE_HEADER + PIPE + REQUEST + PIPE + TLS + PIPE + PIPE + PIPE + PIPE + USER_AGENT
+)
 
 MESSAGE = MESSAGE_SIMPLE | MESSAGE_v3 | MESSAGE_v2 | MESSAGE_v1
 
@@ -216,11 +220,11 @@ def parse(message):
     data["file"]["version"] = _value_or_none(parsed.version)
     data["file"]["type"] = _value_or_none(parsed.package_type)
 
-    if parsed[0] == 'download':
+    if parsed[0] == "download":
         data["project"] = _value_or_none(parsed.project_name)
         result = _cattr.structure(data, Download)
-    elif parsed[0] == 'simple':
-        data["project"] = parsed.url.split('/')[2]
+    elif parsed[0] == "simple":
+        data["project"] = parsed.url.split("/")[2]
         result = _cattr.structure(data, Simple)
     else:
         result = _cattr.structure(data, Download)
