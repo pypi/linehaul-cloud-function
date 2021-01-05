@@ -1,0 +1,19 @@
+steps:
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: [
+    'functions', 'deploy', 'linehaul-staging-ingestor',
+    '--trigger-resource', 'linehaul-logs-staging',
+    '--trigger-event', 'google.storage.object.finalize',
+    '--runtime', 'python37',
+    '--entry-point', 'process_fastly_log',
+    '--retry'
+  ]
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: [
+    'functions', 'deploy', 'linehaul-ingestor',
+    '--trigger-resource', 'linehaul-logs',
+    '--trigger-event', 'google.storage.object.finalize',
+    '--runtime', 'python37',
+    '--entry-point', 'process_fastly_log',
+    '--retry'
+  ]
