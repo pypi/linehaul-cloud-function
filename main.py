@@ -15,6 +15,7 @@ from pathlib import Path
 
 from linehaul.events.parser import parse, Download, Simple
 
+from google.api_core import exceptions
 from google.cloud import bigquery, storage
 
 _cattr = cattr.Converter()
@@ -122,4 +123,8 @@ def process_fastly_log(data, context):
                 # Be opprotunistic about unprocessed files...
                 pass
 
-        bob_logs_log_blob.delete()
+        try:
+            bob_logs_log_blob.delete()
+        except exceptions.NotFound:
+            # Sometimes we try to delete twice
+            pass
