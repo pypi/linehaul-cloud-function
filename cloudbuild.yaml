@@ -5,6 +5,7 @@ steps:
     '--trigger-resource', 'linehaul-logs-staging',
     '--trigger-event', 'google.storage.object.finalize',
     '--runtime', 'python37',
+    '--source', '.',
     '--entry-point', 'process_fastly_log',
     '--retry'
   ]
@@ -14,6 +15,7 @@ steps:
     '--trigger-resource', 'linehaul-logs',
     '--trigger-event', 'google.storage.object.finalize',
     '--runtime', 'python37',
+    '--source', '.',
     '--entry-point', 'process_fastly_log',
     '--retry'
   ]
