@@ -1,0 +1,19 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.7'
+    - name: Install dependencies
+      run: python -m pip install -r requirements.txt
+    - name: Install test dependencies
+      run: python -m pip intsall pytest pretend
+    - name: Test
+      run: python -m pytest
