@@ -5,13 +5,9 @@ import datetime
 import os
 import json
 import gzip
-import sys
-import tempfile
 
-from collections import defaultdict
 from tempfile import NamedTemporaryFile
 from contextlib import ExitStack
-from pathlib import Path
 
 from linehaul.events.parser import parse, Download, Simple
 
@@ -75,7 +71,7 @@ def process_fastly_log(data, context):
                 else:
                     unprocessed_file.write(line)
                     unprocessed_lines += 1
-            except Exception as e:
+            except Exception:
                 unprocessed_file.write(line)
                 unprocessed_lines += 1
 
@@ -119,7 +115,7 @@ def process_fastly_log(data, context):
             blob = bucket.blob(f"unprocessed/{default_partition}/{identifier}.txt")
             try:
                 blob.upload_from_file(unprocessed_file, rewind=True)
-            except:
+            except Exception:
                 # Be opprotunistic about unprocessed files...
                 pass
 
