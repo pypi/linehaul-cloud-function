@@ -19,8 +19,8 @@ _cattr.register_unstructure_hook(
     arrow.Arrow, lambda o: o.format("YYYY-MM-DD HH:mm:ss ZZ")
 )
 
-
-DATASETS = os.environ.get("BIGQUERY_DATASET", "").strip().split(os.pathsep)
+# Multiple datasets can be specified by separating them with whitespace
+DATASETS = os.environ.get("BIGQUERY_DATASET", "").strip().split()
 SIMPLE_TABLE = os.environ.get("BIGQUERY_SIMPLE_TABLE")
 DOWNLOAD_TABLE = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
 RESULT_BUCKET = os.environ.get("RESULT_BUCKET")
