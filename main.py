@@ -23,6 +23,7 @@ _cattr.register_unstructure_hook(
 DATASET = os.environ.get("BIGQUERY_DATASET")
 SIMPLE_TABLE = os.environ.get("BIGQUERY_SIMPLE_TABLE")
 DOWNLOAD_TABLE = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
+RESULT_BUCKET = os.environ.get("RESULT_BUCKET")
 
 prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads"}
 
@@ -110,7 +111,7 @@ def process_fastly_log(data, context):
             load_job.result()
             print(f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}")
 
-        bucket = storage_client.bucket(os.environ.get("RESULT_BUCKET"))
+        bucket = storage_client.bucket(RESULT_BUCKET)
         if unprocessed_lines > 0:
             blob = bucket.blob(f"unprocessed/{default_partition}/{identifier}.txt")
             try:
