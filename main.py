@@ -20,7 +20,7 @@ _cattr.register_unstructure_hook(
 )
 
 
-DATASET = os.environ.get("BIGQUERY_DATASET")
+DATASETS = os.environ.get("BIGQUERY_DATASET", "").strip().split(os.pathsep)
 SIMPLE_TABLE = os.environ.get("BIGQUERY_SIMPLE_TABLE")
 DOWNLOAD_TABLE = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
 RESULT_BUCKET = os.environ.get("RESULT_BUCKET")
@@ -81,37 +81,43 @@ def process_fastly_log(data, context):
             f"Processed gs://{data['bucket']}/{data['name']}: {total} lines, {simple_lines} simple_requests, {download_lines} file_downloads, {unprocessed_lines} unprocessed"
         )
 
-        dataset_ref = bigquery_client.dataset(DATASET)
-
+        # Load the data into the dataset(s)
         job_config = bigquery.LoadJobConfig()
         job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
         job_config.ignore_unknown_values = True
 
-        if download_lines > 0:
-            load_job = bigquery_client.load_table_from_file(
-                download_results_file,
-                dataset_ref.table(DOWNLOAD_TABLE),
-                job_id_prefix="linehaul_file_downloads",
-                location="US",
-                job_config=job_config,
-                rewind=True,
-            )
-            load_job.result()
-            print(f"Loaded {load_job.output_rows} rows into {DATASET}:{DOWNLOAD_TABLE}")
+        for DATASET in DATASETS:
+            dataset_ref = bigquery_client.dataset(DATASET)
+            if download_lines > 0:
+                load_job = bigquery_client.load_table_from_file(
+                    download_results_file,
+                    dataset_ref.table(DOWNLOAD_TABLE),
+                    job_id_prefix="linehaul_file_downloads",
+                    location="US",
+                    job_config=job_config,
+                    rewind=True,
+                )
+                load_job.result()
+                print(
+                    f"Loaded {load_job.output_rows} rows into {DATASET}:{DOWNLOAD_TABLE}"
+                )
 
-        if simple_lines > 0:
-            load_job = bigquery_client.load_table_from_file(
-                simple_results_file,
-                dataset_ref.table(SIMPLE_TABLE),
-                job_id_prefix="linehaul_file_downloads",
-                location="US",
-                job_config=job_config,
-                rewind=True,
-            )
-            load_job.result()
-            print(f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}")
+            if simple_lines > 0:
+                load_job = bigquery_client.load_table_from_file(
+                    simple_results_file,
+                    dataset_ref.table(SIMPLE_TABLE),
+                    job_id_prefix="linehaul_file_downloads",
+                    location="US",
+                    job_config=job_config,
+                    rewind=True,
+                )
+                load_job.result()
+                print(
+                    f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}"
+                )
 
-        bucket = storage_client.bucket(RESULT_BUCKET)
+            bucket = storage_client.bucket(RESULT_BUCKET)
+
         if unprocessed_lines > 0:
             blob = bucket.blob(f"unprocessed/{default_partition}/{identifier}.txt")
             try:
@@ -120,6 +126,7 @@ def process_fastly_log(data, context):
                 # Be opprotunistic about unprocessed files...
                 pass
 
+        # Remove the log file we processed
         try:
             bob_logs_log_blob.delete()
         except exceptions.NotFound:

@@ -13,6 +13,16 @@ RESULT_BUCKET = "my-result-bucket"
 
 
 @pytest.mark.parametrize(
+    "bigquery_dataset, expected_dataset_calls",
+    [
+        ("my-bigquery-dataset", [pretend.call("my-bigquery-dataset")]),
+        (
+            "my-bigquery-dataset some-other-dataset",
+            [pretend.call("my-bigquery-dataset"), pretend.call("some-other-dataset")],
+        ),
+    ],
+)
+@pytest.mark.parametrize(
     "log_filename, table_name, expected",
     [
         (
@@ -29,8 +39,15 @@ RESULT_BUCKET = "my-result-bucket"
         ),
     ],
 )
-def test_function(monkeypatch, log_filename, table_name, expected):
-    monkeypatch.setenv("BIGQUERY_DATASET", BIGQUERY_DATASET)
+def test_function(
+    monkeypatch,
+    log_filename,
+    table_name,
+    expected,
+    bigquery_dataset,
+    expected_dataset_calls,
+):
+    monkeypatch.setenv("BIGQUERY_DATASET", bigquery_dataset)
     monkeypatch.setenv("BIGQUERY_SIMPLE_TABLE", BIGQUERY_SIMPLE_TABLE)
     monkeypatch.setenv("BIGQUERY_DOWNLOAD_TABLE", BIGQUERY_DOWNLOAD_TABLE)
     monkeypatch.setenv("RESULT_BUCKET", RESULT_BUCKET)
@@ -87,12 +104,11 @@ def test_function(monkeypatch, log_filename, table_name, expected):
 
     main.process_fastly_log(data, context)
 
-    assert storage_client_stub.bucket.calls == [
-        pretend.call("my-bucket"),
+    assert storage_client_stub.bucket.calls == [pretend.call("my-bucket")] + [
         pretend.call(RESULT_BUCKET),
-    ]
+    ] * len(expected_dataset_calls)
     assert bucket_stub.get_blob.calls == [pretend.call(log_filename)]
-    assert bigquery_client_stub.dataset.calls == [pretend.call(BIGQUERY_DATASET)]
+    assert bigquery_client_stub.dataset.calls == expected_dataset_calls
     assert bigquery_client_stub.load_table_from_file.calls == [
         pretend.call(
             bigquery_client_stub.load_table_from_file.calls[0].args[0],  # shh
@@ -102,8 +118,10 @@ def test_function(monkeypatch, log_filename, table_name, expected):
             job_config=job_config_stub,
             rewind=True,
         )
-    ]
-    assert dataset_stub.table.calls == [pretend.call(table_name)]
+    ] * len(expected_dataset_calls)
+    assert dataset_stub.table.calls == [pretend.call(table_name)] * len(
+        expected_dataset_calls
+    )
     assert blob_stub.delete.calls == [pretend.call()]
-    assert load_job_stub.result.calls == [pretend.call()]
+    assert load_job_stub.result.calls == [pretend.call()] * len(expected_dataset_calls)
     assert load_job_stub._result == expected
