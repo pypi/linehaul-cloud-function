@@ -6,6 +6,7 @@ import pytest
 
 import main
 
+GCP_PROJECT = "my-gcp-project"
 BIGQUERY_DATASET = "my-bigquery-dataset"
 BIGQUERY_SIMPLE_TABLE = "my-simple-table"
 BIGQUERY_DOWNLOAD_TABLE = "my-download-table"
@@ -13,12 +14,18 @@ RESULT_BUCKET = "my-result-bucket"
 
 
 @pytest.mark.parametrize(
-    "bigquery_dataset, expected_dataset_calls",
+    "bigquery_dataset, expected_from_string_calls",
     [
-        ("my-bigquery-dataset", [pretend.call("my-bigquery-dataset")]),
+        (
+            "my-bigquery-dataset",
+            [pretend.call("my-bigquery-dataset", default_project=GCP_PROJECT)],
+        ),
         (
             "my-bigquery-dataset some-other-dataset",
-            [pretend.call("my-bigquery-dataset"), pretend.call("some-other-dataset")],
+            [
+                pretend.call("my-bigquery-dataset", default_project=GCP_PROJECT),
+                pretend.call("some-other-dataset", default_project=GCP_PROJECT),
+            ],
         ),
     ],
 )
@@ -45,8 +52,9 @@ def test_function(
     table_name,
     expected,
     bigquery_dataset,
-    expected_dataset_calls,
+    expected_from_string_calls,
 ):
+    monkeypatch.setenv("GCP_PROJECT", GCP_PROJECT)
     monkeypatch.setenv("BIGQUERY_DATASET", bigquery_dataset)
     monkeypatch.setenv("BIGQUERY_SIMPLE_TABLE", BIGQUERY_SIMPLE_TABLE)
     monkeypatch.setenv("BIGQUERY_DOWNLOAD_TABLE", BIGQUERY_DOWNLOAD_TABLE)
@@ -82,10 +90,13 @@ def test_function(
         return load_job_stub
 
     bigquery_client_stub = pretend.stub(
-        dataset=pretend.call_recorder(lambda a: dataset_stub),
         load_table_from_file=pretend.call_recorder(_load_table_from_file),
     )
     job_config_stub = pretend.stub()
+    dataset_reference_stub = pretend.stub(
+        from_string=pretend.call_recorder(lambda *a, **kw: dataset_stub)
+    )
+
     monkeypatch.setattr(
         main,
         "bigquery",
@@ -93,6 +104,7 @@ def test_function(
             Client=lambda: bigquery_client_stub,
             LoadJobConfig=lambda: job_config_stub,
             SourceFormat=pretend.stub(NEWLINE_DELIMITED_JSON=pretend.stub()),
+            dataset=pretend.stub(DatasetReference=dataset_reference_stub),
         ),
     )
 
@@ -106,9 +118,9 @@ def test_function(
 
     assert storage_client_stub.bucket.calls == [pretend.call("my-bucket")] + [
         pretend.call(RESULT_BUCKET),
-    ] * len(expected_dataset_calls)
+    ] * len(expected_from_string_calls)
     assert bucket_stub.get_blob.calls == [pretend.call(log_filename)]
-    assert bigquery_client_stub.dataset.calls == expected_dataset_calls
+    assert dataset_reference_stub.from_string.calls == expected_from_string_calls
     assert bigquery_client_stub.load_table_from_file.calls == [
         pretend.call(
             bigquery_client_stub.load_table_from_file.calls[0].args[0],  # shh
@@ -118,10 +130,12 @@ def test_function(
             job_config=job_config_stub,
             rewind=True,
         )
-    ] * len(expected_dataset_calls)
+    ] * len(expected_from_string_calls)
     assert dataset_stub.table.calls == [pretend.call(table_name)] * len(
-        expected_dataset_calls
+        expected_from_string_calls
     )
     assert blob_stub.delete.calls == [pretend.call()]
-    assert load_job_stub.result.calls == [pretend.call()] * len(expected_dataset_calls)
+    assert load_job_stub.result.calls == [pretend.call()] * len(
+        expected_from_string_calls
+    )
     assert load_job_stub._result == expected
