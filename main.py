@@ -39,6 +39,8 @@ def process_fastly_log(data, context):
     identifier = os.path.basename(data["name"]).split("-", 3)[-1].rstrip(".log.gz")
     default_partition = datetime.datetime.utcnow().strftime("%Y%m%d")
 
+    print(f"Beginning processing for gs://{data['bucket']}/{data['name']}")
+
     bob_logs_log_blob = storage_client.bucket(data["bucket"]).get_blob(data["name"])
     if bob_logs_log_blob is None:
         return  # This has already been processed?
