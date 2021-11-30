@@ -19,3 +19,21 @@ steps:
     '--entry-point', 'process_fastly_log',
     '--retry'
   ]
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: [
+    'functions', 'deploy', 'linehaul-staging-publisher',
+    '--trigger-topic', 'linehaul-staging-publisher-topic',
+    '--runtime', 'python37',
+    '--source', '.',
+    '--entry-point', 'load_processed_files_into_bigquery',
+    '--retry'
+  ]
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: [
+    'functions', 'deploy', 'linehaul-publisher',
+    '--trigger-topic', 'linehaul-publisher-topic',
+    '--runtime', 'python37',
+    '--source', '.',
+    '--entry-point', 'load_processed_files_into_bigquery',
+    '--retry'
+  ]
