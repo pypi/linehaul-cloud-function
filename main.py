@@ -88,44 +88,14 @@ def process_fastly_log(data, context):
             f"Processed gs://{data['bucket']}/{data['name']}: {total} lines, {simple_lines} simple_requests, {download_lines} file_downloads, {unprocessed_lines} unprocessed"
         )
 
-        # Load the data into the dataset(s)
-        job_config = bigquery.LoadJobConfig()
-        job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
-        job_config.ignore_unknown_values = True
+        bucket = storage_client.bucket(RESULT_BUCKET)
 
-        for DATASET in DATASETS:
-            dataset_ref = bigquery.dataset.DatasetReference.from_string(
-                DATASET, default_project=DEFAULT_PROJECT
-            )
-            if download_lines > 0:
-                load_job = bigquery_client.load_table_from_file(
-                    download_results_file,
-                    dataset_ref.table(DOWNLOAD_TABLE),
-                    job_id_prefix="linehaul_file_downloads",
-                    location="US",
-                    job_config=job_config,
-                    rewind=True,
-                )
-                load_job.result()
-                print(
-                    f"Loaded {load_job.output_rows} rows into {DATASET}:{DOWNLOAD_TABLE}"
-                )
-
-            if simple_lines > 0:
-                load_job = bigquery_client.load_table_from_file(
-                    simple_results_file,
-                    dataset_ref.table(SIMPLE_TABLE),
-                    job_id_prefix="linehaul_file_downloads",
-                    location="US",
-                    job_config=job_config,
-                    rewind=True,
-                )
-                load_job.result()
-                print(
-                    f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}"
-                )
-
-            bucket = storage_client.bucket(RESULT_BUCKET)
+        if simple_lines > 0:
+            blob = bucket.blob(f"processed/{default_partition}/simple-{identifier}.json")
+            blob.upload_from_file(simple_results_file, rewind=True)
+        if download_lines > 0:
+            blob = bucket.blob(f"processed/{default_partition}/downloads-{identifier}.json")
+            blob.upload_from_file(download_results_file, rewind=True)
 
         if unprocessed_lines > 0:
             blob = bucket.blob(f"unprocessed/{default_partition}/{identifier}.txt")
