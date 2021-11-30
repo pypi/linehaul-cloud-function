@@ -20,14 +20,6 @@ _cattr.register_unstructure_hook(
 )
 
 DEFAULT_PROJECT = os.environ.get("GCP_PROJECT", "the-psf")
-# Multiple datasets can be specified by separating them with whitespace
-# Datasets in other projects can be referenced by using the full dataset id:
-#   <project_id>.<dataset_name>
-# If only the dataset name is provided (no separating period) the
-# DEFAULT_PROJECT will be used as the project ID.
-DATASETS = os.environ.get("BIGQUERY_DATASET", "").strip().split()
-SIMPLE_TABLE = os.environ.get("BIGQUERY_SIMPLE_TABLE")
-DOWNLOAD_TABLE = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
 RESULT_BUCKET = os.environ.get("RESULT_BUCKET")
 
 prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads"}
@@ -35,8 +27,7 @@ prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads
 
 def process_fastly_log(data, context):
     storage_client = storage.Client()
-    bigquery_client = bigquery.Client()
-    identifier = os.path.basename(data["name"]).split("-", 3)[-1].rstrip(".log.gz")
+    file_name = os.path.basename(data["name"]).rstrip(".log.gz")
 
     print(f"Beginning processing for gs://{data['bucket']}/{data['name']}")
 
@@ -58,7 +49,7 @@ def process_fastly_log(data, context):
         simple_results_file = stack.enter_context(NamedTemporaryFile())
         download_results_file = stack.enter_context(NamedTemporaryFile())
 
-        min_timestamp = datetime.datetime.utcnow()
+        min_timestamp = arrow.utcnow()
         for line in input_file:
             try:
                 res = parse(line.decode())
@@ -93,14 +84,14 @@ def process_fastly_log(data, context):
         partition = min_timestamp.strftime("%Y%m%d")
 
         if simple_lines > 0:
-            blob = bucket.blob(f"processed/{partition}/simple-{identifier}.json")
+            blob = bucket.blob(f"processed/{partition}/simple-{file_name}.json")
             blob.upload_from_file(simple_results_file, rewind=True)
         if download_lines > 0:
-            blob = bucket.blob(f"processed/{partition}/downloads-{identifier}.json")
+            blob = bucket.blob(f"processed/{partition}/downloads-{file_name}.json")
             blob.upload_from_file(download_results_file, rewind=True)
 
         if unprocessed_lines > 0:
-            blob = bucket.blob(f"unprocessed/{partition}/{identifier}.txt")
+            blob = bucket.blob(f"unprocessed/{partition}/{file_name}.txt")
             try:
                 blob.upload_from_file(unprocessed_file, rewind=True)
             except Exception:
