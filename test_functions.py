@@ -151,7 +151,7 @@ def test_load_processed_files_into_bigquery(
 
     blob_stub = pretend.stub(name="blobname", bucket=bucket)
 
-    def _generate_blob_list(prefix):
+    def _generate_blob_list(prefix, max_results):
         blob_list = [blob_stub]
         blob_lists[prefix] = blob_list
         return blob_list
@@ -203,8 +203,8 @@ def test_load_processed_files_into_bigquery(
         pretend.call(RESULT_BUCKET),
     ]
     assert bucket_stub.list_blobs.calls == [
-        pretend.call(prefix=f"processed/{partition}/downloads-"),
-        pretend.call(prefix=f"processed/{partition}/simple-"),
+        pretend.call(prefix=f"processed/{partition}/downloads-", max_results=5000),
+        pretend.call(prefix=f"processed/{partition}/simple-", max_results=5000),
     ]
     assert (
         load_job_stub.result.calls
