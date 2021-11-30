@@ -20,6 +20,8 @@ _cattr.register_unstructure_hook(
 )
 
 DEFAULT_PROJECT = os.environ.get("GCP_PROJECT", "the-psf")
+RESULT_BUCKET = os.environ.get("RESULT_BUCKET")
+
 # Multiple datasets can be specified by separating them with whitespace
 # Datasets in other projects can be referenced by using the full dataset id:
 #   <project_id>.<dataset_name>
@@ -28,16 +30,13 @@ DEFAULT_PROJECT = os.environ.get("GCP_PROJECT", "the-psf")
 DATASETS = os.environ.get("BIGQUERY_DATASET", "").strip().split()
 SIMPLE_TABLE = os.environ.get("BIGQUERY_SIMPLE_TABLE")
 DOWNLOAD_TABLE = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
-RESULT_BUCKET = os.environ.get("RESULT_BUCKET")
 
 prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads"}
 
 
 def process_fastly_log(data, context):
     storage_client = storage.Client()
-    bigquery_client = bigquery.Client()
-    identifier = os.path.basename(data["name"]).split("-", 3)[-1].rstrip(".log.gz")
-    default_partition = datetime.datetime.utcnow().strftime("%Y%m%d")
+    file_name = os.path.basename(data["name"]).rstrip(".log.gz")
 
     print(f"Beginning processing for gs://{data['bucket']}/{data['name']}")
 
@@ -59,9 +58,11 @@ def process_fastly_log(data, context):
         simple_results_file = stack.enter_context(NamedTemporaryFile())
         download_results_file = stack.enter_context(NamedTemporaryFile())
 
+        min_timestamp = arrow.utcnow()
         for line in input_file:
             try:
                 res = parse(line.decode())
+                min_timestamp = min(min_timestamp, res.timestamp)
                 if res is not None:
                     if res.__class__.__name__ == Simple.__name__:
                         simple_results_file.write(
@@ -88,47 +89,18 @@ def process_fastly_log(data, context):
             f"Processed gs://{data['bucket']}/{data['name']}: {total} lines, {simple_lines} simple_requests, {download_lines} file_downloads, {unprocessed_lines} unprocessed"
         )
 
-        # Load the data into the dataset(s)
-        job_config = bigquery.LoadJobConfig()
-        job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
-        job_config.ignore_unknown_values = True
+        bucket = storage_client.bucket(RESULT_BUCKET)
+        partition = min_timestamp.strftime("%Y%m%d")
 
-        for DATASET in DATASETS:
-            dataset_ref = bigquery.dataset.DatasetReference.from_string(
-                DATASET, default_project=DEFAULT_PROJECT
-            )
-            if download_lines > 0:
-                load_job = bigquery_client.load_table_from_file(
-                    download_results_file,
-                    dataset_ref.table(DOWNLOAD_TABLE),
-                    job_id_prefix="linehaul_file_downloads",
-                    location="US",
-                    job_config=job_config,
-                    rewind=True,
-                )
-                load_job.result()
-                print(
-                    f"Loaded {load_job.output_rows} rows into {DATASET}:{DOWNLOAD_TABLE}"
-                )
-
-            if simple_lines > 0:
-                load_job = bigquery_client.load_table_from_file(
-                    simple_results_file,
-                    dataset_ref.table(SIMPLE_TABLE),
-                    job_id_prefix="linehaul_file_downloads",
-                    location="US",
-                    job_config=job_config,
-                    rewind=True,
-                )
-                load_job.result()
-                print(
-                    f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}"
-                )
-
-            bucket = storage_client.bucket(RESULT_BUCKET)
+        if simple_lines > 0:
+            blob = bucket.blob(f"processed/{partition}/simple-{file_name}.json")
+            blob.upload_from_file(simple_results_file, rewind=True)
+        if download_lines > 0:
+            blob = bucket.blob(f"processed/{partition}/downloads-{file_name}.json")
+            blob.upload_from_file(download_results_file, rewind=True)
 
         if unprocessed_lines > 0:
-            blob = bucket.blob(f"unprocessed/{default_partition}/{identifier}.txt")
+            blob = bucket.blob(f"unprocessed/{partition}/{file_name}.txt")
             try:
                 blob.upload_from_file(unprocessed_file, rewind=True)
             except Exception:
