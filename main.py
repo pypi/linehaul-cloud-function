@@ -22,6 +22,15 @@ _cattr.register_unstructure_hook(
 DEFAULT_PROJECT = os.environ.get("GCP_PROJECT", "the-psf")
 RESULT_BUCKET = os.environ.get("RESULT_BUCKET")
 
+# Multiple datasets can be specified by separating them with whitespace
+# Datasets in other projects can be referenced by using the full dataset id:
+#   <project_id>.<dataset_name>
+# If only the dataset name is provided (no separating period) the
+# DEFAULT_PROJECT will be used as the project ID.
+DATASETS = os.environ.get("BIGQUERY_DATASET", "").strip().split()
+SIMPLE_TABLE = os.environ.get("BIGQUERY_SIMPLE_TABLE")
+DOWNLOAD_TABLE = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
+
 prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads"}
 
 
