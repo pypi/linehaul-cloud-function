@@ -154,7 +154,6 @@ def load_processed_files_into_bigquery(event, context):
             job_id_prefix="linehaul_file_downloads",
             location="US",
             job_config=job_config,
-            rewind=True,
         )
         load_job.result()
         print(f"Loaded {load_job.output_rows} rows into {DATASET}:{DOWNLOAD_TABLE}")
@@ -163,10 +162,9 @@ def load_processed_files_into_bigquery(event, context):
         load_job = bigquery_client.load_table_from_uri(
             simple_source_uris,
             dataset_ref.table(SIMPLE_TABLE),
-            job_id_prefix="linehaul_file_downloads",
+            job_id_prefix="linehaul_simple_requests",
             location="US",
             job_config=job_config,
-            rewind=True,
         )
         load_job.result()
         print(f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}")
