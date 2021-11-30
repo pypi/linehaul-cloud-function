@@ -1,6 +1,7 @@
 import arrow
 import cattr
 
+import base64
 import datetime
 import os
 import json
@@ -113,3 +114,62 @@ def process_fastly_log(data, context):
         except exceptions.NotFound:
             # Sometimes we try to delete twice
             pass
+
+
+def load_processed_files_into_bigquery(event, context):
+    if "attributes" in event and "partition" in event["attributes"]:
+        # Check to see if we've manually triggered the function and provided a partition
+        partition = event["attributes"]["partition"]
+    else:
+        # Otherwise, this was triggered via cron, use the current time
+        partition = datetime.datetime.utcnow().strftime("%Y%m%d")
+
+    folder = f"gs://{RESULT_BUCKET}/processed/{partition}"
+
+    # Load the data into the dataset(s)
+    job_config = bigquery.LoadJobConfig()
+    job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
+    job_config.ignore_unknown_values = True
+
+    storage_client = storage.Client()
+    bucket = storage_client.bucket(RESULT_BUCKET)
+
+    bigquery_client = bigquery.Client()
+
+    # Get the processed files we're loading
+    download_prefix = f"{folder}/downloads-*.json"
+    download_source_uris = bucket.list_blobs(prefix=download_prefix)
+    simple_prefix = f"{folder}/simple-*.json"
+    simple_source_uris = bucket.list_blobs(prefix=simple_prefix)
+
+    for DATASET in DATASETS:
+        dataset_ref = bigquery.dataset.DatasetReference.from_string(
+            DATASET, default_project=DEFAULT_PROJECT
+        )
+
+        # Load the files for the downloads table
+        load_job = bigquery_client.load_table_from_uri(
+            download_source_uris,
+            dataset_ref.table(DOWNLOAD_TABLE),
+            job_id_prefix="linehaul_file_downloads",
+            location="US",
+            job_config=job_config,
+            rewind=True,
+        )
+        load_job.result()
+        print(f"Loaded {load_job.output_rows} rows into {DATASET}:{DOWNLOAD_TABLE}")
+
+        # Load the files for the simple table
+        load_job = bigquery_client.load_table_from_uri(
+            simple_source_uris,
+            dataset_ref.table(SIMPLE_TABLE),
+            job_id_prefix="linehaul_file_downloads",
+            location="US",
+            job_config=job_config,
+            rewind=True,
+        )
+        load_job.result()
+        print(f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}")
+
+    bucket.delete_blobs(blobs=download_source_uris)
+    bucket.delete_blobs(blobs=simple_source_uris)
