@@ -124,7 +124,7 @@ def load_processed_files_into_bigquery(event, context):
         # Otherwise, this was triggered via cron, use the current time
         partition = datetime.datetime.utcnow().strftime("%Y%m%d")
 
-    folder = f"gs://{RESULT_BUCKET}/processed/{partition}"
+    folder = f"processed/{partition}"
 
     # Load the data into the dataset(s)
     job_config = bigquery.LoadJobConfig()
@@ -137,10 +137,16 @@ def load_processed_files_into_bigquery(event, context):
     bigquery_client = bigquery.Client()
 
     # Get the processed files we're loading
-    download_prefix = f"{folder}/downloads-*.json"
-    download_source_uris = bucket.list_blobs(prefix=download_prefix)
-    simple_prefix = f"{folder}/simple-*.json"
-    simple_source_uris = bucket.list_blobs(prefix=simple_prefix)
+    download_prefix = f"{folder}/downloads-"
+    download_source_blobs = bucket.list_blobs(prefix=download_prefix)
+    download_source_uris = [
+        f"gs://{blob.bucket.name}/{blob.name}" for blob in download_source_blobs
+    ]
+    simple_prefix = f"{folder}/simple-"
+    simple_source_blobs = bucket.list_blobs(prefix=simple_prefix)
+    simple_source_uris = [
+        f"gs://{blob.bucket.name}/{blob.name}" for blob in simple_source_blobs
+    ]
 
     for DATASET in DATASETS:
         dataset_ref = bigquery.dataset.DatasetReference.from_string(

@@ -147,8 +147,12 @@ def test_load_processed_files_into_bigquery(
 
     blob_lists = {}
 
+    bucket = pretend.stub(name=RESULT_BUCKET)
+
+    blob_stub = pretend.stub(name="blobname", bucket=bucket)
+
     def _generate_blob_list(prefix):
-        blob_list = pretend.stub(prefix=prefix)
+        blob_list = [blob_stub]
         blob_lists[prefix] = blob_list
         return blob_list
 
@@ -199,17 +203,14 @@ def test_load_processed_files_into_bigquery(
         pretend.call(RESULT_BUCKET),
     ]
     assert bucket_stub.list_blobs.calls == [
-        pretend.call(
-            prefix=f"gs://my-result-bucket/processed/{partition}/downloads-*.json"
-        ),
-        pretend.call(
-            prefix=f"gs://my-result-bucket/processed/{partition}/simple-*.json"
-        ),
+        pretend.call(prefix=f"processed/{partition}/downloads-"),
+        pretend.call(prefix=f"processed/{partition}/simple-"),
     ]
     assert (
         load_job_stub.result.calls
         == [pretend.call()] * len(bigquery_dataset.split()) * 2
     )
-    assert set(bucket_stub.delete_blobs.calls) == set(
-        pretend.call(blobs=blobs) for blobs in blob_lists.values()
+    assert (
+        bucket_stub.delete_blobs.calls
+        == [pretend.call(blobs=[f"gs://{RESULT_BUCKET}/{blob_stub.name}"])] * 2
     )
