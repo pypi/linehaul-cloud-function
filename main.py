@@ -37,7 +37,6 @@ def process_fastly_log(data, context):
     storage_client = storage.Client()
     bigquery_client = bigquery.Client()
     identifier = os.path.basename(data["name"]).split("-", 3)[-1].rstrip(".log.gz")
-    default_partition = datetime.datetime.utcnow().strftime("%Y%m%d")
 
     print(f"Beginning processing for gs://{data['bucket']}/{data['name']}")
 
@@ -59,9 +58,11 @@ def process_fastly_log(data, context):
         simple_results_file = stack.enter_context(NamedTemporaryFile())
         download_results_file = stack.enter_context(NamedTemporaryFile())
 
+        min_timestamp = datetime.datetime.utcnow()
         for line in input_file:
             try:
                 res = parse(line.decode())
+                min_timestamp = min(min_timestamp, res.timestamp)
                 if res is not None:
                     if res.__class__.__name__ == Simple.__name__:
                         simple_results_file.write(
@@ -89,16 +90,17 @@ def process_fastly_log(data, context):
         )
 
         bucket = storage_client.bucket(RESULT_BUCKET)
+        partition = min_timestamp.strftime("%Y%m%d")
 
         if simple_lines > 0:
-            blob = bucket.blob(f"processed/{default_partition}/simple-{identifier}.json")
+            blob = bucket.blob(f"processed/{partition}/simple-{identifier}.json")
             blob.upload_from_file(simple_results_file, rewind=True)
         if download_lines > 0:
-            blob = bucket.blob(f"processed/{default_partition}/downloads-{identifier}.json")
+            blob = bucket.blob(f"processed/{partition}/downloads-{identifier}.json")
             blob.upload_from_file(download_results_file, rewind=True)
 
         if unprocessed_lines > 0:
-            blob = bucket.blob(f"unprocessed/{default_partition}/{identifier}.txt")
+            blob = bucket.blob(f"unprocessed/{partition}/{identifier}.txt")
             try:
                 blob.upload_from_file(unprocessed_file, rewind=True)
             except Exception:
