@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 from pathlib import Path
 from importlib import reload
@@ -114,28 +115,26 @@ RESULT_BUCKET = "my-result-bucket"
     ],
 )
 @pytest.mark.parametrize(
-    "log_filename, table_name, expected",
+    "blobs, expected_load_jobs, expected_delete_calls",
     [
+        ({"simple": [], "downloads": ["blob0", "blob1", "blob2"]}, 1, 3),
+        ({"simple": ["blob0", "blob1", "blob2"], "downloads": []}, 1, 3),
         (
-            "downloads-2021-01-07-20-55-2021-01-07T20-55-00.000-B8Hs_G6d6xN61En2ypwk.log.gz",
-            BIGQUERY_DOWNLOAD_TABLE,
-            b'{"timestamp": "2021-01-07 20:54:54 +00:00", "url": "/packages/f7/12/ec3f2e203afa394a149911729357aa48affc59c20e2c1c8297a60f33f133/threadpoolctl-2.1.0-py3-none-any.whl", "project": "threadpoolctl", "file": {"filename": "threadpoolctl-2.1.0-py3-none-any.whl", "project": "threadpoolctl", "version": "2.1.0", "type": "bdist_wheel"}, "tls_protocol": "TLSv1.2", "tls_cipher": "ECDHE-RSA-AES128-GCM-SHA256", "country_code": "US", "details": {"installer": {"name": "pip", "version": "20.1.1"}, "python": "3.7.9", "implementation": {"name": "CPython", "version": "3.7.9"}, "distro": {"name": "Debian GNU/Linux", "version": "9", "id": "stretch", "libc": {"lib": "glibc", "version": "2.24"}}, "system": {"name": "Linux", "release": "4.15.0-112-generic"}, "cpu": "x86_64", "openssl_version": "OpenSSL 1.1.0l  10 Sep 2019", "setuptools_version": "47.1.0", "ci": null}}\n'
-            b'{"timestamp": "2021-01-07 20:54:54 +00:00", "url": "/packages/cd/f9/8fad70a3bd011a6be7c5c6067278f006a25341eb39d901fbda307e26804c/django_crum-0.7.9-py2.py3-none-any.whl", "project": "django-crum", "file": {"filename": "django_crum-0.7.9-py2.py3-none-any.whl", "project": "django-crum", "version": "0.7.9", "type": "bdist_wheel"}, "tls_protocol": "TLSv1.2", "tls_cipher": "ECDHE-RSA-AES128-GCM-SHA256", "country_code": "US", "details": {"installer": {"name": "pip", "version": "20.0.2"}, "python": "3.8.5", "implementation": {"name": "CPython", "version": "3.8.5"}, "distro": {"name": "Ubuntu", "version": "16.04", "id": "xenial", "libc": {"lib": "glibc", "version": "2.23"}}, "system": {"name": "Linux", "release": "4.4.0-1113-aws"}, "cpu": "x86_64", "openssl_version": "OpenSSL 1.0.2g  1 Mar 2016", "setuptools_version": "44.1.0", "ci": null}}\n',
-        ),
-        (
-            "simple-2021-01-07-20-55-2021-01-07T20-55-00.000-3wuB00t9tqgbGLFI2fSI.log.gz",
-            BIGQUERY_SIMPLE_TABLE,
-            b'{"timestamp": "2021-01-07 20:54:52 +00:00", "url": "/simple/azureml-model-management-sdk/", "project": "azureml-model-management-sdk", "tls_protocol": "TLSv1.3", "tls_cipher": "AES256-GCM", "country_code": "US", "details": {"installer": {"name": "pip", "version": "20.0.2"}, "python": "3.7.5", "implementation": {"name": "CPython", "version": "3.7.5"}, "distro": {"name": "Ubuntu", "version": "18.04", "id": "bionic", "libc": {"lib": "glibc", "version": "2.27"}}, "system": {"name": "Linux", "release": "4.15.0-1092-azure"}, "cpu": "x86_64", "openssl_version": "OpenSSL 1.1.1  11 Sep 2018", "setuptools_version": "45.2.0", "ci": null}}\n'
-            b'{"timestamp": "2021-01-07 20:54:52 +00:00", "url": "/simple/pyrsistent/", "project": "pyrsistent", "tls_protocol": "TLSv1.3", "tls_cipher": "AES256-GCM", "country_code": "US", "details": {"installer": {"name": "pip", "version": "20.0.2"}, "python": "3.8.5", "implementation": {"name": "CPython", "version": "3.8.5"}, "distro": {"name": "Ubuntu", "version": "20.04", "id": "focal", "libc": {"lib": "glibc", "version": "2.31"}}, "system": {"name": "Linux", "release": "5.4.72-flatcar"}, "cpu": "x86_64", "openssl_version": "OpenSSL 1.1.1f  31 Mar 2020", "setuptools_version": "45.2.0", "ci": true}}\n',
+            {
+                "simple": ["blob0", "blob1", "blob2"],
+                "downloads": ["blob0", "blob1", "blob2"],
+            },
+            2,
+            6,
         ),
     ],
 )
 def test_load_processed_files_into_bigquery(
     monkeypatch,
-    log_filename,
-    table_name,
-    expected,
     bigquery_dataset,
+    blobs,
+    expected_load_jobs,
+    expected_delete_calls,
 ):
     monkeypatch.setenv("GCP_PROJECT", GCP_PROJECT)
     monkeypatch.setenv("BIGQUERY_DATASET", bigquery_dataset)
@@ -145,23 +144,33 @@ def test_load_processed_files_into_bigquery(
 
     reload(main)
 
-    blob_lists = {}
-
     bucket = pretend.stub(name=RESULT_BUCKET)
 
-    blob_stub = pretend.stub(name="blobname", bucket=bucket)
+    blob_stub = pretend.stub(
+        name="blobname", bucket=bucket, delete=pretend.call_recorder(lambda: None)
+    )
 
     def _generate_blob_list(prefix, max_results):
-        blob_list = [blob_stub]
-        blob_lists[prefix] = blob_list
+        if "simple" in prefix:
+            _blobs = blobs["simple"]
+        elif "downloads" in prefix:
+            _blobs = blobs["downloads"]
+        else:
+            _blobs = []
+        blob_list = [blob_stub for b in _blobs]
         return blob_list
 
     bucket_stub = pretend.stub(
         list_blobs=pretend.call_recorder(_generate_blob_list),
-        delete_blobs=pretend.call_recorder(lambda *a, **kw: None),
     )
+
+    @contextlib.contextmanager
+    def fake_batch(*a, **kw):
+        yield True
+
     storage_client_stub = pretend.stub(
         bucket=pretend.call_recorder(lambda a: bucket_stub),
+        batch=fake_batch,
     )
     monkeypatch.setattr(
         main, "storage", pretend.stub(Client=lambda: storage_client_stub)
@@ -208,9 +217,6 @@ def test_load_processed_files_into_bigquery(
     ]
     assert (
         load_job_stub.result.calls
-        == [pretend.call()] * len(bigquery_dataset.split()) * 2
+        == [pretend.call()] * len(bigquery_dataset.split()) * expected_load_jobs
     )
-    assert (
-        bucket_stub.delete_blobs.calls
-        == [pretend.call(blobs=[f"gs://{RESULT_BUCKET}/{blob_stub.name}"])] * 2
-    )
+    assert blob_stub.delete.calls == [pretend.call()] * expected_delete_calls

@@ -31,7 +31,9 @@ RESULT_BUCKET = os.environ.get("RESULT_BUCKET")
 DATASETS = os.environ.get("BIGQUERY_DATASET", "").strip().split()
 SIMPLE_TABLE = os.environ.get("BIGQUERY_SIMPLE_TABLE")
 DOWNLOAD_TABLE = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
-MAX_BLOBS_PER_RUN = int(os.environ.get("MAX_BLOBS_PER_RUN", '5000'))  # Cannot exceed 10,000
+MAX_BLOBS_PER_RUN = int(
+    os.environ.get("MAX_BLOBS_PER_RUN", "5000")
+)  # Cannot exceed 10,000
 
 prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads"}
 
@@ -139,15 +141,15 @@ def load_processed_files_into_bigquery(event, context):
 
     # Get the processed files we're loading
     download_prefix = f"{folder}/downloads-"
-    download_source_blobs = bucket.list_blobs(
-        prefix=download_prefix, max_results=MAX_BLOBS_PER_RUN
+    download_source_blobs = list(
+        bucket.list_blobs(prefix=download_prefix, max_results=MAX_BLOBS_PER_RUN)
     )
     download_source_uris = [
         f"gs://{blob.bucket.name}/{blob.name}" for blob in download_source_blobs
     ]
     simple_prefix = f"{folder}/simple-"
-    simple_source_blobs = bucket.list_blobs(
-        prefix=simple_prefix, max_results=MAX_BLOBS_PER_RUN
+    simple_source_blobs = list(
+        bucket.list_blobs(prefix=simple_prefix, max_results=MAX_BLOBS_PER_RUN)
     )
     simple_source_uris = [
         f"gs://{blob.bucket.name}/{blob.name}" for blob in simple_source_blobs
@@ -158,27 +160,32 @@ def load_processed_files_into_bigquery(event, context):
             DATASET, default_project=DEFAULT_PROJECT
         )
 
-        # Load the files for the downloads table
-        load_job = bigquery_client.load_table_from_uri(
-            download_source_uris,
-            dataset_ref.table(DOWNLOAD_TABLE),
-            job_id_prefix="linehaul_file_downloads",
-            location="US",
-            job_config=job_config,
-        )
-        load_job.result()
-        print(f"Loaded {load_job.output_rows} rows into {DATASET}:{DOWNLOAD_TABLE}")
+        if len(download_source_uris) > 0:
+            # Load the files for the downloads table
+            load_job = bigquery_client.load_table_from_uri(
+                download_source_uris,
+                dataset_ref.table(DOWNLOAD_TABLE),
+                job_id_prefix="linehaul_file_downloads",
+                location="US",
+                job_config=job_config,
+            )
+            load_job.result()
+            print(f"Loaded {load_job.output_rows} rows into {DATASET}:{DOWNLOAD_TABLE}")
 
-        # Load the files for the simple table
-        load_job = bigquery_client.load_table_from_uri(
-            simple_source_uris,
-            dataset_ref.table(SIMPLE_TABLE),
-            job_id_prefix="linehaul_simple_requests",
-            location="US",
-            job_config=job_config,
-        )
-        load_job.result()
-        print(f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}")
+        if len(simple_source_uris) > 0:
+            # Load the files for the simple table
+            load_job = bigquery_client.load_table_from_uri(
+                simple_source_uris,
+                dataset_ref.table(SIMPLE_TABLE),
+                job_id_prefix="linehaul_simple_requests",
+                location="US",
+                job_config=job_config,
+            )
+            load_job.result()
+            print(f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}")
 
-    bucket.delete_blobs(blobs=download_source_uris)
-    bucket.delete_blobs(blobs=simple_source_uris)
+    with storage_client.batch():
+        for blob in download_source_blobs:
+            blob.delete()
+        for blob in simple_source_blobs:
+            blob.delete()
