@@ -31,7 +31,7 @@ RESULT_BUCKET = os.environ.get("RESULT_BUCKET")
 DATASETS = os.environ.get("BIGQUERY_DATASET", "").strip().split()
 SIMPLE_TABLE = os.environ.get("BIGQUERY_SIMPLE_TABLE")
 DOWNLOAD_TABLE = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
-MAX_BLOBS_PER_RUN = 5000  # Cannot exceed 10,000
+MAX_BLOBS_PER_RUN = int(os.environ.get("MAX_BLOBS_PER_RUN", '5000'))  # Cannot exceed 10,000
 
 prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads"}
 
