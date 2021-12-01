@@ -187,5 +187,6 @@ def load_processed_files_into_bigquery(event, context):
     with storage_client.batch():
         for blob in download_source_blobs:
             blob.delete()
+    with storage_client.batch():
         for blob in simple_source_blobs:
             blob.delete()
