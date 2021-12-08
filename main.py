@@ -184,9 +184,11 @@ def load_processed_files_into_bigquery(event, context):
             load_job.result()
             print(f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}")
 
-    with storage_client.batch():
-        for blob in download_source_blobs:
-            blob.delete()
-    with storage_client.batch():
-        for blob in simple_source_blobs:
-            blob.delete()
+    if len(download_source_blobs) > 0:
+        with storage_client.batch():
+            for blob in download_source_blobs:
+                blob.delete()
+    if len(simple_source_blobs) > 0:
+        with storage_client.batch():
+            for blob in simple_source_blobs:
+                blob.delete()
