@@ -13,7 +13,7 @@ from contextlib import ExitStack
 from linehaul.events.parser import parse, Download, Simple
 
 from google.api_core import exceptions
-from google.cloud import bigquery, storage
+from google.cloud import bigquery, storage, pubsub_v1
 
 _cattr = cattr.Converter()
 _cattr.register_unstructure_hook(
@@ -22,6 +22,7 @@ _cattr.register_unstructure_hook(
 
 DEFAULT_PROJECT = os.environ.get("GCP_PROJECT", "the-psf")
 RESULT_BUCKET = os.environ.get("RESULT_BUCKET")
+PUBSUB_TOPIC = os.environ.get("PUBSUB_TOPIC")
 
 # Multiple datasets can be specified by separating them with whitespace
 # Datasets in other projects can be referenced by using the full dataset id:
@@ -120,9 +121,12 @@ def process_fastly_log(data, context):
 
 
 def load_processed_files_into_bigquery(event, context):
+    continue_publishing = False
     if "attributes" in event and "partition" in event["attributes"]:
         # Check to see if we've manually triggered the function and provided a partition
         partition = event["attributes"]["partition"]
+        if "continue_publishing" in event["attributes"]:
+            continue_publishing = bool(event["attributes"]["continue_publishing"])
     else:
         # Otherwise, this was triggered via cron, use the current time
         partition = datetime.datetime.utcnow().strftime("%Y%m%d")
@@ -192,3 +196,14 @@ def load_processed_files_into_bigquery(event, context):
         with storage_client.batch():
             for blob in simple_source_blobs:
                 blob.delete()
+
+    if continue_publishing and (
+        len(download_source_blobs) > 0 or len(simple_source_blobs) > 0
+    ):
+        publisher = pubsub_v1.PublisherClient()
+        topic_path = publisher.topic_path(DEFAULT_PROJECT, PUBSUB_TOPIC)
+        publisher.publish(
+            topic_path,
+            partition=partition,
+            continue_publishing=str(continue_publishing),
+        )
