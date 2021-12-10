@@ -204,6 +204,7 @@ def load_processed_files_into_bigquery(event, context):
         topic_path = publisher.topic_path(DEFAULT_PROJECT, PUBSUB_TOPIC)
         publisher.publish(
             topic_path,
+            b'',
             partition=partition,
             continue_publishing=str(continue_publishing),
         )
