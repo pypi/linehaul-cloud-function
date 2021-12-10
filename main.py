@@ -13,6 +13,7 @@ from contextlib import ExitStack
 from linehaul.events.parser import parse, Download, Simple
 
 from google.api_core import exceptions
+from google.api_core.retry import Retry
 from google.cloud import bigquery, storage, pubsub_v1
 
 _cattr = cattr.Converter()
@@ -120,6 +121,30 @@ def process_fastly_log(data, context):
             pass
 
 
+@Retry()
+def _delete_blobs(
+    storage_client,
+    download_source_blobs,
+    download_prefix,
+    simple_source_blobs,
+    simple_prefix,
+):
+    if len(download_source_blobs) > 0:
+        with storage_client.batch():
+            for blob in download_source_blobs:
+                blob.delete()
+        print(
+            f"Deleted {len(download_source_blobs)} blobs from gs://{RESULT_BUCKET}/{download_prefix}"
+        )
+    if len(simple_source_blobs) > 0:
+        with storage_client.batch():
+            for blob in simple_source_blobs:
+                blob.delete()
+        print(
+            f"Deleted {len(simple_source_blobs)} blobs from gs://{RESULT_BUCKET}/{simple_prefix}"
+        )
+
+
 def load_processed_files_into_bigquery(event, context):
     continue_publishing = False
     if "attributes" in event and "partition" in event["attributes"]:
@@ -188,20 +213,13 @@ def load_processed_files_into_bigquery(event, context):
             load_job.result()
             print(f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}")
 
-    if len(download_source_blobs) > 0:
-        with storage_client.batch():
-            for blob in download_source_blobs:
-                blob.delete()
-        print(
-            f"Deleted {len(download_source_blobs)} blobs from gs://{RESULT_BUCKET}/{download_prefix}"
-        )
-    if len(simple_source_blobs) > 0:
-        with storage_client.batch():
-            for blob in simple_source_blobs:
-                blob.delete()
-        print(
-            f"Deleted {len(simple_source_blobs)} blobs from gs://{RESULT_BUCKET}/{simple_prefix}"
-        )
+    _delete_blobs(
+        storage_client,
+        download_source_blobs,
+        download_prefix,
+        simple_source_blobs,
+        simple_prefix,
+    )
 
     if continue_publishing and (
         len(download_source_blobs) > 0 or len(simple_source_blobs) > 0
