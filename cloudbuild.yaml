@@ -28,7 +28,6 @@ steps:
     '--runtime', 'python37',
     '--source', '.',
     '--entry-point', 'load_processed_files_into_bigquery',
-    '--retry'
   ]
   waitFor: ['-']
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -38,6 +37,5 @@ steps:
     '--runtime', 'python37',
     '--source', '.',
     '--entry-point', 'load_processed_files_into_bigquery',
-    '--retry'
   ]
   waitFor: ['-']
