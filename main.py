@@ -192,10 +192,16 @@ def load_processed_files_into_bigquery(event, context):
         with storage_client.batch():
             for blob in download_source_blobs:
                 blob.delete()
+        print(
+            f"Deleted {len(download_source_blobs)} blobs from gs://{RESULT_BUCKET}/{download_prefix}"
+        )
     if len(simple_source_blobs) > 0:
         with storage_client.batch():
             for blob in simple_source_blobs:
                 blob.delete()
+        print(
+            f"Deleted {len(simple_source_blobs)} blobs from gs://{RESULT_BUCKET}/{simple_prefix}"
+        )
 
     if continue_publishing and (
         len(download_source_blobs) > 0 or len(simple_source_blobs) > 0
@@ -204,7 +210,7 @@ def load_processed_files_into_bigquery(event, context):
         topic_path = publisher.topic_path(DEFAULT_PROJECT, PUBSUB_TOPIC)
         publisher.publish(
             topic_path,
-            b'',
+            b"",
             partition=partition,
             continue_publishing=str(continue_publishing),
         )
