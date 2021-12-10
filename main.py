@@ -209,7 +209,7 @@ def load_processed_files_into_bigquery(event, context):
         publisher = pubsub_v1.PublisherClient()
         topic_path = publisher.topic_path(DEFAULT_PROJECT, PUBSUB_TOPIC)
         print(
-            "Publishing to {topic_path}: partition={partition},continue_publishing={str(continue_publishing)}"
+            f"Publishing to {topic_path}: partition={partition},continue_publishing={str(continue_publishing)}"
         )
         future = publisher.publish(
             topic_path,
