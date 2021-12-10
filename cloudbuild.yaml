@@ -9,6 +9,7 @@ steps:
     '--entry-point', 'process_fastly_log',
     '--retry'
   ]
+  waitFor: ['-']
 - name: 'gcr.io/cloud-builders/gcloud'
   args: [
     'functions', 'deploy', 'linehaul-ingestor',
@@ -19,6 +20,7 @@ steps:
     '--entry-point', 'process_fastly_log',
     '--retry'
   ]
+  waitFor: ['-']
 - name: 'gcr.io/cloud-builders/gcloud'
   args: [
     'functions', 'deploy', 'linehaul-staging-publisher',
@@ -28,6 +30,7 @@ steps:
     '--entry-point', 'load_processed_files_into_bigquery',
     '--retry'
   ]
+  waitFor: ['-']
 - name: 'gcr.io/cloud-builders/gcloud'
   args: [
     'functions', 'deploy', 'linehaul-publisher',
@@ -37,3 +40,4 @@ steps:
     '--entry-point', 'load_processed_files_into_bigquery',
     '--retry'
   ]
+  waitFor: ['-']
