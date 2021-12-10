@@ -145,18 +145,39 @@ def _delete_blobs(
         )
 
 
+def _fetch_blobs(bucket, blob_type="downloads", past_partition=None, partition=None):
+    # Get the processed files we're loading
+
+    if past_partition is not None:
+        folder = f"processed/{past_partition}"
+        prefix = f"{folder}/{blob_type}-"
+        source_blobs = list(
+            bucket.list_blobs(prefix=prefix, max_results=MAX_BLOBS_PER_RUN)
+        )
+        if len(source_blobs) > 0:
+            return (source_blobs, prefix)
+
+    folder = f"processed/{partition}"
+    prefix = f"{folder}/{blob_type}-"
+    source_blobs = list(bucket.list_blobs(prefix=prefix, max_results=MAX_BLOBS_PER_RUN))
+    return (source_blobs, prefix)
+
+
 def load_processed_files_into_bigquery(event, context):
     continue_publishing = False
     if "attributes" in event and "partition" in event["attributes"]:
         # Check to see if we've manually triggered the function and provided a partition
+        past_partition = None
         partition = event["attributes"]["partition"]
         if "continue_publishing" in event["attributes"]:
             continue_publishing = bool(event["attributes"]["continue_publishing"])
     else:
         # Otherwise, this was triggered via cron, use the current time
+        # checking the past day first
+        past_partition = (
+            datetime.datetime.utcnow() - datetime.timedelta(days=1)
+        ).strftime("%Y%m%d")
         partition = datetime.datetime.utcnow().strftime("%Y%m%d")
-
-    folder = f"processed/{partition}"
 
     # Load the data into the dataset(s)
     job_config = bigquery.LoadJobConfig()
@@ -168,17 +189,17 @@ def load_processed_files_into_bigquery(event, context):
 
     bigquery_client = bigquery.Client()
 
-    # Get the processed files we're loading
-    download_prefix = f"{folder}/downloads-"
-    download_source_blobs = list(
-        bucket.list_blobs(prefix=download_prefix, max_results=MAX_BLOBS_PER_RUN)
+    download_source_blobs, download_prefix = _fetch_blobs(
+        bucket,
+        blob_type="downloads",
+        past_partition=past_partition,
+        partition=partition,
     )
     download_source_uris = [
         f"gs://{blob.bucket.name}/{blob.name}" for blob in download_source_blobs
     ]
-    simple_prefix = f"{folder}/simple-"
-    simple_source_blobs = list(
-        bucket.list_blobs(prefix=simple_prefix, max_results=MAX_BLOBS_PER_RUN)
+    simple_source_blobs, simple_prefix = _fetch_blobs(
+        bucket, blob_type="simple", past_partition=past_partition, partition=partition
     )
     simple_source_uris = [
         f"gs://{blob.bucket.name}/{blob.name}" for blob in simple_source_blobs

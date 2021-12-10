@@ -115,17 +115,24 @@ RESULT_BUCKET = "my-result-bucket"
     ],
 )
 @pytest.mark.parametrize(
-    "blobs, expected_load_jobs, expected_delete_calls",
+    "blobs, simple_fetch_current, expected_load_jobs, expected_delete_calls",
     [
-        ({"simple": [], "downloads": ["blob0", "blob1", "blob2"]}, 1, 3),
-        ({"simple": ["blob0", "blob1", "blob2"], "downloads": []}, 1, 3),
+        ({"simple": [], "downloads": ["blob0", "blob1", "blob2"]}, True, 1, 3),
+        ({"simple": ["blob0", "blob1", "blob2"], "downloads": []}, True, 1, 3),
         (
             {
                 "simple": ["blob0", "blob1", "blob2"],
                 "downloads": ["blob0", "blob1", "blob2"],
             },
+            True,
             2,
             6,
+        ),
+        (
+            {"simple": ["pastblob0", "pastblob1"], "downloads": ["blob0", "blob1"]},
+            False,
+            2,
+            4,
         ),
     ],
 )
@@ -133,6 +140,7 @@ def test_load_processed_files_into_bigquery(
     monkeypatch,
     bigquery_dataset,
     blobs,
+    simple_fetch_current,
     expected_load_jobs,
     expected_delete_calls,
 ):
@@ -150,11 +158,22 @@ def test_load_processed_files_into_bigquery(
         name="blobname", bucket=bucket, delete=pretend.call_recorder(lambda: None)
     )
 
+    past_partition = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime(
+        "%Y%m%d"
+    )
+    partition = datetime.datetime.utcnow().strftime("%Y%m%d")
+
     def _generate_blob_list(prefix, max_results):
         if "simple" in prefix:
-            _blobs = blobs["simple"]
+            if past_partition in prefix:
+                _blobs = [b for b in blobs["simple"] if b.startswith("past")]
+            else:
+                _blobs = blobs["simple"]
         elif "downloads" in prefix:
-            _blobs = blobs["downloads"]
+            if past_partition in prefix:
+                _blobs = [b for b in blobs["downloads"] if b.startswith("past")]
+            else:
+                _blobs = blobs["downloads"]
         else:
             _blobs = []
         blob_list = [blob_stub for b in _blobs]
@@ -204,17 +223,21 @@ def test_load_processed_files_into_bigquery(
 
     event = {}
     context = pretend.stub()
-    partition = datetime.datetime.utcnow().strftime("%Y%m%d")
 
     main.load_processed_files_into_bigquery(event, context)
 
     assert storage_client_stub.bucket.calls == [
         pretend.call(RESULT_BUCKET),
     ]
-    assert bucket_stub.list_blobs.calls == [
+    expected_list_blob_calls = [
+        pretend.call(prefix=f"processed/{past_partition}/downloads-", max_results=1000),
         pretend.call(prefix=f"processed/{partition}/downloads-", max_results=1000),
+        pretend.call(prefix=f"processed/{past_partition}/simple-", max_results=1000),
         pretend.call(prefix=f"processed/{partition}/simple-", max_results=1000),
     ]
+    if not simple_fetch_current:
+        expected_list_blob_calls = expected_list_blob_calls[:3]
+    assert bucket_stub.list_blobs.calls == expected_list_blob_calls
     assert (
         load_job_stub.result.calls
         == [pretend.call()] * len(bigquery_dataset.split()) * expected_load_jobs
