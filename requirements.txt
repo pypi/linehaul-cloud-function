@@ -79,9 +79,9 @@ chardet==4.0.0 \
     --hash=sha256:0d6f53a15db4120f2b08c94f11e7d93d2c911ee118b6b30a04ec3ee8310179fa \
     --hash=sha256:f864054d66fd9118f2e67044ac8981a54775ec5b67aed0441892edb553d21da5
     # via requests
-google-api-core[grpc]==2.3.0 \
-    --hash=sha256:538cd927bfe0f7c63bc1eb5fcadeeeb52f90bb29117dea87ae8cae48953d4c60 \
-    --hash=sha256:65fe1d9d8dde7a5ddc43d5cc134560c2a76b1a26c9f70c3c24f13b7910e89e10
+google-api-core[grpc]==2.7.1 \
+    --hash=sha256:6be1fc59e2a7ba9f66808bbc22f976f81e4c3e7ab20fa0620ce42686288787d0 \
+    --hash=sha256:b0fa577e512f0c8e063386b974718b8614586a798c5894ed34bedf256d9dae24
     # via
     #   google-cloud-bigquery
     #   google-cloud-core
@@ -108,9 +108,9 @@ google-cloud-pubsub==2.9.0 \
     --hash=sha256:2b3d9336afab0e5df67201234976519a28da3ccb7c9a0e463be28e2827a9fdaa \
     --hash=sha256:f303a0e8fba3b8d0beccc84d6282ae4864cf40c9cd9431ae7ca4a3191309a10c
     # via -r requirements.in
-google-cloud-storage==1.43.0 \
-    --hash=sha256:bb3e4088054d50616bd57e4b81bb158db804c91faed39279d666e2fd07d2c118 \
-    --hash=sha256:f3b4f4be5c8a1b5727a8f7136c94d3bacdd4b7bf11f9553f51ae4c1d876529d3
+google-cloud-storage==2.2.0 \
+    --hash=sha256:5f78346bc45b37c27cf9f6f11241f22d8e03c576a24e9fce09f0304e6ef40d64 \
+    --hash=sha256:d35996801135d51db49bb8f7a7e29cedcc25aa8b435eed0c4c0ef2f9ee56d1d9
     # via -r requirements.in
 google-crc32c==1.1.2 \
     --hash=sha256:0ae3cf54e0d4d83c8af1afe96fc0970fbf32f1b29275f3bfd44ce25c4b622a2b \
@@ -143,9 +143,9 @@ google-crc32c==1.1.2 \
     --hash=sha256:ea170341a4a9078a067b431044cd56c73553425833a7c2bb81734777a230ad4b \
     --hash=sha256:ef2ed6d0ac4de4ac602903e203eccd25ec8e37f1446fe1a3d2953a658035e0a5
     # via google-resumable-media
-google-resumable-media==1.3.1 \
-    --hash=sha256:106db689574283a7d9d154d5a97ab384153c55a1195cecb8c01cad9e6e827628 \
-    --hash=sha256:1a1eb743d13f782d1405437c266b2c815ef13c2b141ba40835c74a3317539d01
+google-resumable-media==2.3.2 \
+    --hash=sha256:06924e8b1e79f158f0202e7dd151ad75b0ea9d59b997c850f56bdd4a5a361513 \
+    --hash=sha256:3c13f84813861ac8f5b6371254bdd437076bf1f3bac527a9f3fd123a70166f52
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
@@ -347,8 +347,6 @@ six==1.16.0 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
     # via
     #   google-auth
-    #   google-cloud-storage
-    #   google-resumable-media
     #   grpcio
     #   protobuf
     #   python-dateutil
@@ -374,6 +372,4 @@ urllib3==1.26.5 \
 setuptools==57.0.0 \
     --hash=sha256:401cbf33a7bf817d08014d51560fc003b895c4cdc1a5b521ad2969e928a07535 \
     --hash=sha256:c8b9f1a457949002e358fea7d3f2a1e1b94ddc0354b2e40afc066bf95d21bf7b
-    # via
-    #   google-api-core
-    #   google-auth
+    # via google-auth
