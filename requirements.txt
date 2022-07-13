@@ -32,9 +32,9 @@ exceptiongroup==1.0.0rc2 \
     --hash=sha256:4d254b05231bed1d43079bdcfe0f1d66c0ab4783e6777a329355f9b78de3ad83 \
     --hash=sha256:83e465152bd0bc2bc40d9b75686854260f86946bb947c652b5cafc31cdff70e7
     # via cattrs
-google-api-core[grpc]==2.7.1 \
-    --hash=sha256:6be1fc59e2a7ba9f66808bbc22f976f81e4c3e7ab20fa0620ce42686288787d0 \
-    --hash=sha256:b0fa577e512f0c8e063386b974718b8614586a798c5894ed34bedf256d9dae24
+google-api-core[grpc]==2.8.2 \
+    --hash=sha256:06f7244c640322b508b125903bb5701bebabce8832f85aba9335ec00b3d02edc \
+    --hash=sha256:93c6a91ccac79079ac6bbf8b74ee75db970cc899278b97d53bc012f35908cf50
     # via
     #   google-cloud-bigquery
     #   google-cloud-core
@@ -57,9 +57,9 @@ google-cloud-core==2.2.3 \
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-pubsub==2.11.0 \
-    --hash=sha256:4cef16ef78b533f5177aaafc85c9ceac29a61afdbd2efad017999859c7ea5ed4 \
-    --hash=sha256:6ed3c9d97f88d1ff02dd80c1f5b6703efec75a7aacabd9285ac4fe0b22b50203
+google-cloud-pubsub==2.13.3 \
+    --hash=sha256:7680d77173cb227fe68e50dc1bb67c2ede4db347b65a6e73b5b1a023aa3948d8 \
+    --hash=sha256:e287050c08a64b5a055494e919625879d277e4c26827b7a17a258588c5ff2549
     # via -r requirements.in
 google-cloud-storage==2.2.1 \
     --hash=sha256:0244f4612710cb5ec445fc6774387564e23f9823363fb408b28724e2102401b7 \
@@ -116,15 +116,16 @@ google-resumable-media==2.3.2 \
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-googleapis-common-protos[grpc]==1.56.0 \
-    --hash=sha256:4007500795bcfc269d279f0f7d253ae18d6dc1ff5d5a73613ffe452038b1ec5f \
-    --hash=sha256:60220c89b8bd5272159bed4929ecdc1243ae1f73437883a499a44a1cbc084086
+googleapis-common-protos[grpc]==1.56.4 \
+    --hash=sha256:8eb2cbc91b69feaf23e32452a7ae60e791e09967d81d4fcc7fc388182d1bd394 \
+    --hash=sha256:c25873c47279387cfdcbdafa36149887901d36202cb645a0e4f29686bf6e4417
     # via
     #   google-api-core
     #   grpc-google-iam-v1
     #   grpcio-status
-grpc-google-iam-v1==0.12.3 \
-    --hash=sha256:0bfb5b56f648f457021a91c0df0db4934b6e0c300bd0f2de2333383fe958aa72
+grpc-google-iam-v1==0.12.4 \
+    --hash=sha256:312801ae848aeb8408c099ea372b96d253077e7851aae1a9e745df984f81f20c \
+    --hash=sha256:3f0ac2c940b9a855d7ce7e31fde28bddb0d9ac362d32d07c67148306931a0e30
     # via google-cloud-pubsub
 grpcio==1.44.0 \
     --hash=sha256:05467acd391e3fffb05991c76cb2ed2fa1309d0e3815ac379764bc5670b4b5d4 \
@@ -230,6 +231,7 @@ protobuf==3.19.4 \
     # via
     #   google-api-core
     #   google-cloud-bigquery
+    #   google-cloud-pubsub
     #   google-cloud-storage
     #   googleapis-common-protos
     #   grpcio-status
