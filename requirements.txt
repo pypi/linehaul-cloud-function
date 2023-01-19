@@ -62,9 +62,9 @@ google-cloud-bigquery-storage==2.13.2 \
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-pubsub==2.11.0 \
-    --hash=sha256:4cef16ef78b533f5177aaafc85c9ceac29a61afdbd2efad017999859c7ea5ed4 \
-    --hash=sha256:6ed3c9d97f88d1ff02dd80c1f5b6703efec75a7aacabd9285ac4fe0b22b50203
+google-cloud-pubsub==2.12.1 \
+    --hash=sha256:7c3f5927a358d5297db87f8b6e5dd12e8b47f11ec319ce3e7b58e046dc23b922 \
+    --hash=sha256:993a615232fad4dc1a13bbca0e0782bfed16780d7914d433be763fe9f1d9fd05
     # via -r requirements.in
 google-cloud-storage==2.4.0 \
     --hash=sha256:5fe26f1381b30e3cc328f46e13531ca8525458f870c1e303c616bdeb7b7f5c66 \
@@ -269,11 +269,8 @@ protobuf==3.19.4 \
     # via
     #   google-api-core
     #   google-cloud-bigquery
-<<<<<<< HEAD
-=======
     #   google-cloud-bigquery-storage
     #   google-cloud-storage
->>>>>>> d3d6c6d (Bump google-cloud-bigquery from 2.34.2 to 3.2.0)
     #   googleapis-common-protos
     #   grpcio-status
     #   proto-plus
