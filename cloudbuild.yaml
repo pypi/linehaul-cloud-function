@@ -4,7 +4,7 @@ steps:
     'functions', 'deploy', 'linehaul-staging-ingestor',
     '--trigger-resource', 'linehaul-logs-staging',
     '--trigger-event', 'google.storage.object.finalize',
-    '--runtime', 'python37',
+    '--runtime', 'python311',
     '--source', '.',
     '--entry-point', 'process_fastly_log',
     '--retry'
@@ -15,7 +15,7 @@ steps:
     'functions', 'deploy', 'linehaul-ingestor',
     '--trigger-resource', 'linehaul-logs',
     '--trigger-event', 'google.storage.object.finalize',
-    '--runtime', 'python37',
+    '--runtime', 'python311',
     '--source', '.',
     '--entry-point', 'process_fastly_log',
     '--retry'
@@ -25,7 +25,7 @@ steps:
   args: [
     'functions', 'deploy', 'linehaul-staging-publisher',
     '--trigger-topic', 'linehaul-staging-publisher-topic',
-    '--runtime', 'python37',
+    '--runtime', 'python311',
     '--source', '.',
     '--entry-point', 'load_processed_files_into_bigquery',
   ]
@@ -34,7 +34,7 @@ steps:
   args: [
     'functions', 'deploy', 'linehaul-publisher',
     '--trigger-topic', 'linehaul-publisher-topic',
-    '--runtime', 'python37',
+    '--runtime', 'python311',
     '--source', '.',
     '--entry-point', 'load_processed_files_into_bigquery',
   ]
