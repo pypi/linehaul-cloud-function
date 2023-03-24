@@ -10,17 +10,17 @@ steps:
     '--retry'
   ]
   waitFor: ['-']
-- name: 'gcr.io/cloud-builders/gcloud'
-  args: [
-    'functions', 'deploy', 'linehaul-ingestor',
-    '--trigger-resource', 'linehaul-logs',
-    '--trigger-event', 'google.storage.object.finalize',
-    '--runtime', 'python311',
-    '--source', '.',
-    '--entry-point', 'process_fastly_log',
-    '--retry'
-  ]
-  waitFor: ['-']
+    #- name: 'gcr.io/cloud-builders/gcloud'
+    #  args: [
+    #    'functions', 'deploy', 'linehaul-ingestor',
+    #    '--trigger-resource', 'linehaul-logs',
+    #    '--trigger-event', 'google.storage.object.finalize',
+    #    '--runtime', 'python311',
+    #    '--source', '.',
+    #    '--entry-point', 'process_fastly_log',
+    #    '--retry'
+    #  ]
+    #  waitFor: ['-']
 - name: 'gcr.io/cloud-builders/gcloud'
   args: [
     'functions', 'deploy', 'linehaul-staging-publisher',
@@ -30,12 +30,12 @@ steps:
     '--entry-point', 'load_processed_files_into_bigquery',
   ]
   waitFor: ['-']
-- name: 'gcr.io/cloud-builders/gcloud'
-  args: [
-    'functions', 'deploy', 'linehaul-publisher',
-    '--trigger-topic', 'linehaul-publisher-topic',
-    '--runtime', 'python311',
-    '--source', '.',
-    '--entry-point', 'load_processed_files_into_bigquery',
-  ]
-  waitFor: ['-']
+    #- name: 'gcr.io/cloud-builders/gcloud'
+    #  args: [
+    #    'functions', 'deploy', 'linehaul-publisher',
+    #    '--trigger-topic', 'linehaul-publisher-topic',
+    #    '--runtime', 'python311',
+    #    '--source', '.',
+    #    '--entry-point', 'load_processed_files_into_bigquery',
+    #  ]
+    #  waitFor: ['-']
