@@ -33,7 +33,10 @@ logger = logging.getLogger(__name__)
 
 _cattr = cattr.Converter()
 _cattr.register_structure_hook(
-    datetime, lambda d, t: datetime.strptime(d[5:-4], "%d %b %Y %H:%M:%S").replace(tzinfo=timezone.utc)
+    datetime,
+    lambda d, t: datetime.strptime(d[5:-4], "%d %b %Y %H:%M:%S").replace(
+        tzinfo=timezone.utc
+    ),
 )
 
 
@@ -145,7 +148,6 @@ class PackageType(enum.Enum):
 
 @attr.s(slots=True, frozen=True)
 class File:
-
     filename = attr.ib(validator=attr.validators.instance_of(str))
     project = attr.ib(validator=attr.validators.instance_of(str))
     version = attr.ib(validator=attr.validators.instance_of(str))
@@ -154,7 +156,6 @@ class File:
 
 @attr.s(slots=True, frozen=True)
 class Download:
-
     timestamp = attr.ib(type=datetime)
     url = attr.ib(validator=attr.validators.instance_of(str))
     project = attr.ib(validator=attr.validators.instance_of(str))
@@ -176,7 +177,6 @@ class Download:
 
 @attr.s(slots=True, frozen=True)
 class Simple:
-
     timestamp = attr.ib(type=datetime)
     url = attr.ib(validator=attr.validators.instance_of(str))
     project = attr.ib(validator=attr.validators.instance_of(str))
