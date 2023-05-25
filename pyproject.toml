@@ -23,7 +23,6 @@ classifiers = [
 ]
 
 dependencies = [
-    "arrow",
     "cattrs",
     "packaging",
     "pyparsing",

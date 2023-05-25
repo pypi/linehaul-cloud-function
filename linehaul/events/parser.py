@@ -14,9 +14,9 @@ import enum
 import logging
 import posixpath
 
+from datetime import datetime, timezone
 from typing import Optional
 
-import arrow
 import attr
 import attr.validators
 import cattr
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 _cattr = cattr.Converter()
 _cattr.register_structure_hook(
-    arrow.Arrow, lambda d, t: arrow.get(d[5:-4], "DD MMM YYYY HH:mm:ss")
+    datetime, lambda d, t: datetime.strptime(d[5:-4], "%d %b %Y %H:%M:%S").replace(tzinfo=timezone.utc)
 )
 
 
@@ -155,7 +155,7 @@ class File:
 @attr.s(slots=True, frozen=True)
 class Download:
 
-    timestamp = attr.ib(type=arrow.Arrow)
+    timestamp = attr.ib(type=datetime)
     url = attr.ib(validator=attr.validators.instance_of(str))
     project = attr.ib(validator=attr.validators.instance_of(str))
     file = attr.ib(type=File)
@@ -177,7 +177,7 @@ class Download:
 @attr.s(slots=True, frozen=True)
 class Simple:
 
-    timestamp = attr.ib(type=arrow.Arrow)
+    timestamp = attr.ib(type=datetime)
     url = attr.ib(validator=attr.validators.instance_of(str))
     project = attr.ib(validator=attr.validators.instance_of(str))
     tls_protocol = attr.ib(
