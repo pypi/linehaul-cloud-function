@@ -158,6 +158,45 @@ def PEP381ClientUserAgent(*, version):
     return {"installer": {"name": "pep381client", "version": version}}
 
 
+@_parser.register
+@regex_ua_parser(r"^maturin/(?P<version>\S+)$")
+def MaturinUserAgent(*, version):
+    return {"installer": {"name": "maturin", "version": version}}
+
+
+@_parser.register
+@regex_ua_parser(r"^pdm/(?P<version>\S+) (?P<impl_name>\S+)/(?P<impl_version>\S+)$")
+def PDMUserAgent(*, version, impl_name, impl_version):
+    return {
+        "installer": {"name": "pdm", "version": version},
+        "implementation": {"name": impl_name, "version": impl_version},
+    }
+
+
+@_parser.register
+@regex_ua_parser(
+    r"^poetry/(?P<version>\S+) (?P<impl_name>\S+)/(?P<impl_version>\S+) "
+    r"(?P<system_name>\S+)/(?P<system_release>\S+)?$"
+)
+def PoetryUserAgent(*, version, impl_name, impl_version, system_name, system_release):
+    return {
+        "installer": {"name": "poetry", "version": version},
+        "implementation": {"name": impl_name, "version": impl_version},
+        "system": {"name": system_name, "release": system_release},
+    }
+
+
+@_parser.register
+@regex_ua_parser(
+    r"^twine/(?P<version>\S+)(?: .+)? (?P<impl_name>\S+)/(?P<impl_version>\S+)$"
+)
+def TwineUserAgent(*, version, impl_name, impl_version):
+    return {
+        "installer": {"name": "twine", "version": version},
+        "implementation": {"name": impl_name, "version": impl_version},
+    }
+
+
 # TODO: We should probably consider not parsing this specially, and moving it to
 #       just the same as we treat browsers, since we don't really know anything
 #       about it-- including whether or not the version of Python mentioned is

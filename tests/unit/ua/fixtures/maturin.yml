@@ -1,0 +1,6 @@
+# maturin format
+- ua: 'maturin/0.8.0-alpha.2'
+  result:
+    installer:
+      name: maturin
+      version: 0.8.0-alpha.2
