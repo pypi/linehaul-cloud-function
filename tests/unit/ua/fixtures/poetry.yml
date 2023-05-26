@@ -1,0 +1,12 @@
+# Poetry Format
+- ua: 'poetry/1.1.11 CPython/3.9.2 Linux/5.10.16.3-microsoft-standard-WSL2'
+  result:
+    installer:
+      name: poetry
+      version: '1.1.11'
+    implementation:
+      name: CPython
+      version: 3.9.2
+    system:
+      name: Linux
+      release: 5.10.16.3-microsoft-standard-WSL2

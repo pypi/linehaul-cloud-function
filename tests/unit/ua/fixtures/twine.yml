@@ -1,0 +1,29 @@
+# Short Twine Format
+- ua: 'twine/4.0.2 CPython/3.9.16'
+  result:
+    installer:
+      name: twine
+      version: '4.0.2'
+    implementation:
+      name: CPython
+      version: 3.9.16
+
+# Long Twine Format
+- ua: 'twine/3.8.0 pkginfo/1.9.6 readme-renderer/34.0 requests/2.27.1 requests-toolbelt/0.10.1 urllib3/1.26.15 tqdm/4.64.1 importlib-metadata/4.8.3 keyring/23.4.1 rfc3986/1.5.0 colorama/0.4.5 CPython/3.9.16'
+  result:
+    installer:
+      name: twine
+      version: 3.8.0
+    implementation:
+      name: CPython
+      version: 3.9.16
+
+# Funny Twine Format
+- ua: "twine/1.12.1 pkginfo/1.4.2 requests/<module 'pip._vendor.requests.__version__' from '/usr/local/lib/python3.6/dist-packages/requests/__version__.py'> setuptools/40.8.0 requests-toolbelt/0.8.0 tqdm/4.28.1 CPython/3.6.7"
+  result:
+    installer:
+      name: twine
+      version: 1.12.1
+    implementation:
+      name: CPython
+      version: 3.6.7

@@ -1,0 +1,9 @@
+# PDM Format
+- ua: 'pdm/2.1.6.dev32+g1e5dc62 CPython/3.11.0'
+  result:
+    installer:
+      name: pdm
+      version: '2.1.6.dev32+g1e5dc62'
+    implementation:
+      name: CPython
+      version: 3.11.0
