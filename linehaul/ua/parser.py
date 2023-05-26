@@ -167,7 +167,10 @@ def MaturinUserAgent(*, version):
 @_parser.register
 @regex_ua_parser(r"^pdm/(?P<version>\S+) (?P<impl_name>\S+)/(?P<impl_version>\S+)$")
 def PDMUserAgent(*, version, impl_name, impl_version):
-    return {"installer": {"name": "pdm", "version": version}, "implementation": {"name": impl_name, "version": impl_version},}
+    return {
+        "installer": {"name": "pdm", "version": version},
+        "implementation": {"name": impl_name, "version": impl_version},
+    }
 
 
 @_parser.register
@@ -184,9 +187,14 @@ def PoetryUserAgent(*, version, impl_name, impl_version, system_name, system_rel
 
 
 @_parser.register
-@regex_ua_parser(r"^twine/(?P<version>\S+)(?: .+)? (?P<impl_name>\S+)/(?P<impl_version>\S+)$")
+@regex_ua_parser(
+    r"^twine/(?P<version>\S+)(?: .+)? (?P<impl_name>\S+)/(?P<impl_version>\S+)$"
+)
 def TwineUserAgent(*, version, impl_name, impl_version):
-    return {"installer": {"name": "twine", "version": version}, "implementation": {"name": impl_name, "version": impl_version},}
+    return {
+        "installer": {"name": "twine", "version": version},
+        "implementation": {"name": impl_name, "version": impl_version},
+    }
 
 
 # TODO: We should probably consider not parsing this specially, and moving it to
