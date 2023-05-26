@@ -1,4 +1,3 @@
-import arrow
 import cattr
 
 import base64
@@ -18,7 +17,7 @@ from google.cloud import bigquery, storage, pubsub_v1
 
 _cattr = cattr.Converter()
 _cattr.register_unstructure_hook(
-    arrow.Arrow, lambda o: o.format("YYYY-MM-DD HH:mm:ss ZZ")
+    datetime.datetime, lambda o: o.strftime("%Y-%m-%d %H:%M:%S +00:00")
 )
 
 DEFAULT_PROJECT = os.environ.get("GCP_PROJECT", "the-psf")
@@ -64,7 +63,7 @@ def process_fastly_log(data, context):
         simple_results_file = stack.enter_context(NamedTemporaryFile())
         download_results_file = stack.enter_context(NamedTemporaryFile())
 
-        min_timestamp = arrow.utcnow()
+        min_timestamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
         for line in input_file:
             try:
                 res = parse(line.decode())

@@ -17,28 +17,24 @@ import attr
 
 @attr.s(slots=True, frozen=True)
 class Installer:
-
     name = attr.ib(type=Optional[str], default=None)
     version = attr.ib(type=Optional[str], default=None)
 
 
 @attr.s(slots=True, frozen=True)
 class Implementation:
-
     name = attr.ib(type=Optional[str], default=None)
     version = attr.ib(type=Optional[str], default=None)
 
 
 @attr.s(slots=True, frozen=True)
 class LibC:
-
     lib = attr.ib(type=Optional[str], default=None)
     version = attr.ib(type=Optional[str], default=None)
 
 
 @attr.s(slots=True, frozen=True)
 class Distro:
-
     name = attr.ib(type=Optional[str], default=None)
     version = attr.ib(type=Optional[str], default=None)
     id = attr.ib(type=Optional[str], default=None)
@@ -47,14 +43,12 @@ class Distro:
 
 @attr.s(slots=True, frozen=True)
 class System:
-
     name = attr.ib(type=Optional[str], default=None)
     release = attr.ib(type=Optional[str], default=None)
 
 
 @attr.s(slots=True, frozen=True)
 class UserAgent:
-
     installer = attr.ib(type=Optional[Installer], default=None)
     python = attr.ib(type=Optional[str], default=None)
     implementation = attr.ib(type=Optional[Implementation], default=None)

@@ -1,0 +1,37 @@
+[project]
+name = "linehaul"
+version = "1.0.0"
+description = "User-Agent parsing for PyPI analytics"
+
+readme = "README.md"
+requires-python = ">=3.11, <4"
+license = {file = "LICENSE.txt"}
+
+keywords = ["pypi", "user-agent", "parsing"]
+authors = [
+  {name = "PyPI Admins", email = "admin@pypi.org" }
+]
+
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Topic :: Software Development :: Build Tools",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3 :: Only",
+]
+
+dependencies = [
+    "cattrs",
+    "packaging",
+    "pyparsing",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/pypi/linehaul-cloud-function"
+"Source" = "https://github.com/pypi/linehaul-cloud-function"
+
+[build-system]
+requires = ["setuptools>=43.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
