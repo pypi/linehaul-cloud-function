@@ -333,7 +333,7 @@ _ignore_re = re.compile(
 )
 
 
-def parse(user_agent):
+def parse(user_agent: str) -> UserAgent | None:
     try:
         return cattr.structure(_parser(user_agent), UserAgent)
     except UnableToParse:
