@@ -22,7 +22,7 @@ import attr.validators
 import cattr
 
 from pyparsing import Literal as L, Word, Optional as OptionalItem
-from pyparsing import printables as _printables, restOfLine
+from pyparsing import printables as _printables, rest_of_line
 from pyparsing import ParseException
 
 from linehaul.ua import UserAgent, parser as user_agents
@@ -44,11 +44,11 @@ class UnparseableEvent(Exception):
     pass
 
 
-class NullValue:
+class _NullValue:
     pass
 
 
-NullValue = NullValue()
+NullValue = _NullValue()
 
 
 printables = "".join(set(_printables + " " + "\t") - {"|", "@"})
@@ -58,29 +58,26 @@ PIPE = L("|").suppress()
 AT = L("@").suppress()
 
 NULL = L("(null)")
-NULL.setParseAction(lambda s, l, t: NullValue)
+NULL.set_parse_action(lambda s, l, t: NullValue)
 
-TIMESTAMP = Word(printables)
-TIMESTAMP = TIMESTAMP.setResultsName("timestamp")
-TIMESTAMP.setName("Timestamp")
+TIMESTAMP = Word(printables).set_name("Timestamp")
+TIMESTAMP = TIMESTAMP.set_results_name("timestamp")
 
-COUNTRY_CODE = Word(printables)
-COUNTRY_CODE = COUNTRY_CODE.setResultsName("country_code")
-COUNTRY_CODE.setName("Country Code")
+COUNTRY_CODE = Word(printables).set_name("Country Code")
+COUNTRY_CODE = COUNTRY_CODE.set_results_name("country_code")
 
-URL = Word(printables)
-URL = URL.setResultsName("url")
-URL.setName("URL")
+URL = Word(printables).set_name("URL")
+URL = URL.set_results_name("url")
 
 REQUEST = TIMESTAMP + PIPE + OptionalItem(COUNTRY_CODE) + PIPE + URL
 
 PROJECT_NAME = NULL | Word(printables)
-PROJECT_NAME = PROJECT_NAME.setResultsName("project_name")
-PROJECT_NAME.setName("Project Name")
+PROJECT_NAME = PROJECT_NAME.set_results_name("project_name")
+PROJECT_NAME.set_name("Project Name")
 
 VERSION = NULL | Word(printables)
-VERSION = VERSION.setResultsName("version")
-VERSION.setName("Version")
+VERSION = VERSION.set_results_name("version")
+VERSION.set_name("Version")
 
 PACKAGE_TYPE = NULL | (
     L("sdist")
@@ -92,34 +89,34 @@ PACKAGE_TYPE = NULL | (
     | L("bdist_rpm")
     | L("bdist_wininst")
 )
-PACKAGE_TYPE = PACKAGE_TYPE.setResultsName("package_type")
-PACKAGE_TYPE.setName("Package Type")
+PACKAGE_TYPE = PACKAGE_TYPE.set_results_name("package_type")
+PACKAGE_TYPE.set_name("Package Type")
 
 PROJECT = PROJECT_NAME + PIPE + VERSION + PIPE + PACKAGE_TYPE
 
 TLS_PROTOCOL = NULL | Word(printables)
-TLS_PROTOCOL = TLS_PROTOCOL.setResultsName("tls_protocol")
-TLS_PROTOCOL.setName("TLS Protocol")
+TLS_PROTOCOL = TLS_PROTOCOL.set_results_name("tls_protocol")
+TLS_PROTOCOL.set_name("TLS Protocol")
 
 TLS_CIPHER = NULL | Word(printables)
-TLS_CIPHER = TLS_CIPHER.setResultsName("tls_cipher")
-TLS_CIPHER.setName("TLS Cipher")
+TLS_CIPHER = TLS_CIPHER.set_results_name("tls_cipher")
+TLS_CIPHER.set_name("TLS Cipher")
 
 TLS = TLS_PROTOCOL + PIPE + TLS_CIPHER
 
-USER_AGENT = restOfLine
-USER_AGENT = USER_AGENT.setResultsName("user_agent")
-USER_AGENT.setName("UserAgent")
+USER_AGENT = rest_of_line
+USER_AGENT = USER_AGENT.set_results_name("user_agent")
+USER_AGENT.set_name("UserAgent")
 
 V1_HEADER = OptionalItem(L("1").suppress() + AT)
 
 MESSAGE_v1 = V1_HEADER + REQUEST + PIPE + PROJECT + PIPE + USER_AGENT
-MESSAGE_v1.leaveWhitespace()
+MESSAGE_v1.leave_whitespace()
 
 V2_HEADER = L("2").suppress() + AT
 
 MESSAGE_v2 = V2_HEADER + REQUEST + PIPE + TLS + PIPE + PROJECT + PIPE + USER_AGENT
-MESSAGE_v2.leaveWhitespace()
+MESSAGE_v2.leave_whitespace()
 
 V3_HEADER = L("download")
 MESSAGE_v3 = (
@@ -204,7 +201,7 @@ def _value_or_none(value):
 
 def parse(message):
     try:
-        parsed = MESSAGE.parseString(message, parseAll=True)
+        parsed = MESSAGE.parse_string(message, parseAll=True)
     except ParseException as exc:
         raise UnparseableEvent("{!r} {}".format(message, exc)) from None
 

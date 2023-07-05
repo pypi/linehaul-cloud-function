@@ -15,6 +15,10 @@ jobs:
       run: python -m pip install --upgrade pip setuptools wheel
     - name: Install dependencies
       run: python -m pip install -r requirements.txt
+    - name: Install lint dependencies
+      run: python -m pip install --upgrade mypy
+    - name: Lint
+      run: python -m mypy -p linehaul
     - name: Install test dependencies
       run: python -m pip install pytest pretend hypothesis pyaml
     - name: Test
