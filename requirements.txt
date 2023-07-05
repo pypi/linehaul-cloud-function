@@ -97,12 +97,6 @@ charset-normalizer==3.1.0 \
     --hash=sha256:f8303414c7b03f794347ad062c0516cee0e15f7a612abd0ce1e25caf6ceb47df \
     --hash=sha256:fca62a8301b605b954ad2e9c3666f9d97f63872aa4efcae5492baca2056b74ab
     # via requests
-# This requirement duplicates the line below, without an extra. We need this to
-# work around https://github.com/pypa/pip/issues/9644 because we can't use
-# --no-deps when this gets installed by GCF
-google-api-core==2.11.0 \
-    --hash=sha256:4b9bb5d5a380a0befa0573b302651b8a9a89262c1730e37bf423cec511804c22 \
-    --hash=sha256:ce222e27b0de0d7bc63eb043b956996d6dccab14cc3b690aaea91c9cc99dc16e
 google-api-core[grpc]==2.11.0 \
     --hash=sha256:4b9bb5d5a380a0befa0573b302651b8a9a89262c1730e37bf423cec511804c22 \
     --hash=sha256:ce222e27b0de0d7bc63eb043b956996d6dccab14cc3b690aaea91c9cc99dc16e
@@ -118,9 +112,9 @@ google-auth==2.16.3 \
     #   google-api-core
     #   google-cloud-core
     #   google-cloud-storage
-google-cloud-bigquery==3.7.0 \
-    --hash=sha256:cf9f543fad3aaf4871c53f56b718e1ef94a9a778b17f16890015f6fc25c328ec \
-    --hash=sha256:d273e6a4fddd24317055c4f7a727b78edb165e714e646d8276df0761fa7023d0
+google-cloud-bigquery==3.11.3 \
+    --hash=sha256:266ba1ddd213b2454c1e4a92ae647813b783128078eb48dda4c0b443c5057e29 \
+    --hash=sha256:d4585be9e76c984ec83ef290ebeff17562d2c9f2f4f84d3015d9b7b27b499a9d
     # via -r requirements.in
 google-cloud-core==2.3.2 \
     --hash=sha256:8417acf6466be2fa85123441696c4badda48db314c607cf1e5d543fa8bdc22fe \
@@ -212,12 +206,6 @@ google-resumable-media==2.4.1 \
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-# This requirement duplicates the line below, without an extra. We need this to
-# work around https://github.com/pypa/pip/issues/9644 because we can't use
-# --no-deps when this gets installed by GCF
-googleapis-common-protos==1.59.0 \
-    --hash=sha256:4168fcb568a826a52f23510412da405abd93f4d23ba544bb68d943b14ba3cb44 \
-    --hash=sha256:b287dc48449d1d41af0c69f4ea26242b5ae4c3d7249a38b0984c86a4caffff1f
 googleapis-common-protos[grpc]==1.59.0 \
     --hash=sha256:4168fcb568a826a52f23510412da405abd93f4d23ba544bb68d943b14ba3cb44 \
     --hash=sha256:b287dc48449d1d41af0c69f4ea26242b5ae4c3d7249a38b0984c86a4caffff1f
@@ -343,8 +331,7 @@ pyparsing==3.0.9 \
 python-dateutil==2.8.2 \
     --hash=sha256:0123cacc1627ae19ddf3c27a5de5bd67ee4586fbdd6440d9748f8abb483d3e86 \
     --hash=sha256:961d03dc3453ebbc59dbdea9e4e11c5651520a876d0f4db161e8674aae935da9
-    # via
-    #   google-cloud-bigquery
+    # via google-cloud-bigquery
 requests==2.28.2 \
     --hash=sha256:64299f4909223da747622c030b781c0d7811e359c37124b4bd368fb8c6518baa \
     --hash=sha256:98b1b2782e3c6c4904938b84c0eb932721069dfdb9134313beff7c83c2df24bf
