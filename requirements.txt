@@ -112,12 +112,13 @@ google-auth==2.28.1 \
     --hash=sha256:34fc3046c257cedcf1622fc4b31fc2be7923d9b4d44973d481125ecc50d83885
     # via
     #   google-api-core
+    #   google-cloud-bigquery
     #   google-cloud-core
     #   google-cloud-pubsub
     #   google-cloud-storage
-google-cloud-bigquery==3.18.0 \
-    --hash=sha256:3520552075502c69710d37b1e9600c84e6974ad271914677d16bfafa502857fb \
-    --hash=sha256:74f0fc6f0ba9477f808d25924dc8a052c55f7ca91064e83e16d3ee5fb7ca77ab
+google-cloud-bigquery==3.19.0 \
+    --hash=sha256:8e311dae49768e1501fcdc5e916bff4b7e169471e5707919f4a6f78a02b3b5a6 \
+    --hash=sha256:c6b8850247a4b132066e49f6e45f850c22824482838688d744a4398eea1120ed
     # via -r requirements.in
 google-cloud-core==2.3.2 \
     --hash=sha256:8417acf6466be2fa85123441696c4badda48db314c607cf1e5d543fa8bdc22fe \
