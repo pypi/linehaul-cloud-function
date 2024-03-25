@@ -4,3 +4,4 @@ pyparsing
 google-cloud-storage
 google-cloud-bigquery
 google-cloud-pubsub
+sentry-sdk

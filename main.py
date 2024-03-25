@@ -1,6 +1,5 @@
 import cattr
 
-import base64
 import datetime
 import os
 import json
@@ -11,9 +10,14 @@ from contextlib import ExitStack
 
 from linehaul.events.parser import parse, Download, Simple
 
+import sentry_sdk
+from sentry_sdk.integrations.serverless import serverless_function
 from google.api_core import exceptions
 from google.api_core.retry import Retry
 from google.cloud import bigquery, storage, pubsub_v1
+
+if dsn := os.environ.get("SENTRY_DSN"):
+    sentry_sdk.init(dsn=dsn, enable_tracing=True)
 
 _cattr = cattr.Converter()
 _cattr.register_unstructure_hook(
@@ -39,6 +43,7 @@ MAX_BLOBS_PER_RUN = int(
 prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads"}
 
 
+@serverless_function
 def process_fastly_log(data, context):
     storage_client = storage.Client()
     file_name = os.path.basename(data["name"]).rstrip(".log.gz")
@@ -162,6 +167,7 @@ def _fetch_blobs(bucket, blob_type="downloads", past_partition=None, partition=N
     return (source_blobs, prefix)
 
 
+@serverless_function
 def load_processed_files_into_bigquery(event, context):
     continue_publishing = False
     if "attributes" in event and "partition" in event["attributes"]:
