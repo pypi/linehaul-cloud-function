@@ -160,6 +160,22 @@ class TestPip1_4UserAgent:
         assert parser.Pip1_4UserAgent(ua) == expected
 
 
+class TestUvUserAgent:
+    @given(st.text().filter(lambda i: not i.startswith("uv/")))
+    def test_not_uv(self, ua):
+        with pytest.raises(parser.UnableToParse):
+            parser.UvUserAgent(ua)
+
+    @given(st_version(max_version="0.1.21"))
+    def test_invalid_version(self, version):
+        with pytest.raises(parser.UnableToParse):
+            parser.UvUserAgent(f"""uv/{version} {{"installer":{{"name":"uv","version":"{version}"}}}}""")
+
+    @given(st.text(max_size=100).filter(lambda i: not _is_valid_json(i)))
+    def test_invalid_json(self, json_blob):
+        with pytest.raises(parser.UnableToParse):
+            parser.UvUserAgent(f"uv/0.1.22 {json_blob}")
+
 class TestParse:
     @given(st.text())
     def test_unknown_user_agent(self, user_agent):

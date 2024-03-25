@@ -197,6 +197,26 @@ def TwineUserAgent(*, version, impl_name, impl_version):
     }
 
 
+@_parser.register
+@ua_parser
+def UvUserAgent(user_agent):
+    # We're only concerned about uv user agents.
+    if not user_agent.startswith("uv/"):
+        raise UnableToParse
+
+    # This format was brand new in uv 0.1.22, so we'll need to restrict it
+    # to only versions of uv newer than that.
+    version_str = user_agent.split()[0].split("/", 1)[1]
+    version = packaging.version.parse(version_str)
+    if version not in SpecifierSet(">=0.1.22", prereleases=True):
+        raise UnableToParse
+
+    try:
+        return json.loads(user_agent.split(maxsplit=1)[1])
+    except (json.JSONDecodeError, UnicodeDecodeError, IndexError):
+        raise UnableToParse from None
+
+
 # TODO: We should probably consider not parsing this specially, and moving it to
 #       just the same as we treat browsers, since we don't really know anything
 #       about it-- including whether or not the version of Python mentioned is
