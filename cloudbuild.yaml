@@ -2,8 +2,6 @@ steps:
 - name: 'gcr.io/cloud-builders/gcloud'
   args: [
     'functions', 'deploy', 'linehaul-ingestor',
-    '--gen2',
-    '--region', 'us-central1',
     '--trigger-resource', 'linehaul-logs',
     '--trigger-event', 'google.storage.object.finalize',
     '--runtime', 'python311',
@@ -15,8 +13,6 @@ steps:
 - name: 'gcr.io/cloud-builders/gcloud'
   args: [
     'functions', 'deploy', 'linehaul-publisher',
-    '--gen2',
-    '--region', 'us-central1',
     '--trigger-topic', 'linehaul-publisher-topic',
     '--runtime', 'python311',
     '--source', '.',
