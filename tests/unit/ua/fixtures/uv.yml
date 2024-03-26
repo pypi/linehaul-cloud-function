@@ -1,0 +1,58 @@
+# uv >=0.1.22 format
+
+# OSX Example
+- ua: 'uv/0.1.22 {"installer":{"name":"uv","version":"0.1.22"},"python":"3.12.2","implementation":{"name":"CPython","version":"3.12.2"},"distro":{"name":"macOS","version":"14.4","id":null,"libc":null},"system":{"name":"Darwin","release":"23.2.0"},"cpu":"arm64","openssl_version":null,"setuptools_version":null,"rustc_version":null,"ci":null}'
+  result:
+    installer:
+      name: uv
+      version: '0.1.22'
+    python: 3.12.2
+    implementation:
+      name: CPython
+      version: 3.12.2
+    distro:
+      name: macOS
+      version: 14.4
+    system:
+      name: Darwin
+      release: 23.2.0
+    cpu: arm64
+
+# Linux (Ubuntu) Example
+- ua: 'uv/0.1.22 {"installer":{"name":"uv","version":"0.1.22"},"python":"3.12.2","implementation":{"name":"CPython","version":"3.12.2"},"distro":{"name":"Ubuntu","version":"22.04","id":"jammy","libc":{"lib":"glibc","version":"2.35"}},"system":{"name":"Linux","release":"6.5.0-1016-azure"},"cpu":"x86_64","openssl_version":null,"setuptools_version":null,"rustc_version":null,"ci":true}'
+  result:
+    installer:
+      name: uv
+      version: '0.1.22'
+    python: 3.12.2
+    implementation:
+      name: CPython
+      version: 3.12.2
+    distro:
+      name: Ubuntu
+      version: 22.04
+      id: jammy
+      libc:
+        lib: glibc
+        version: 2.35
+    system:
+      name: Linux
+      release: 6.5.0-1016-azure
+    cpu: x86_64
+    ci: true
+
+# Windows Example
+- ua: 'uv/0.1.22 {"installer":{"name":"uv","version":"0.1.22"},"python":"3.12.2","implementation":{"name":"CPython","version":"3.12.2"},"distro":null,"system":{"name":"Windows","release":"2022Server"},"cpu":"AMD64","openssl_version":null,"setuptools_version":null,"rustc_version":null,"ci":true}'
+  result:
+    installer:
+      name: uv
+      version: '0.1.22'
+    python: 3.12.2
+    implementation:
+      name: CPython
+      version: 3.12.2
+    system:
+      name: Windows
+      release: 2022Server
+    cpu: AMD64
+    ci: true
