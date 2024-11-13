@@ -346,7 +346,8 @@ _ignore_re = re.compile(
         ^NSIS_Inetc\ \(Mozilla\)$ |
         ^Debian\ uscan |
         ^Pingdom\.com_bot_version_\d+\.\d+_\(https?://www.pingdom.com/\)$ |
-        ^MauiBot\ \(crawler\.feedback\+dc@gmail\.com\)$
+        ^MauiBot\ \(crawler\.feedback\+dc@gmail\.com\)$ |
+        ^inspector\.pypi\.io$
     )
     """,
     re.VERBOSE,
