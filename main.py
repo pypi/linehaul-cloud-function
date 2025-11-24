@@ -4,12 +4,15 @@ import datetime
 import os
 import json
 import gzip
+import shlex
 
 from tempfile import NamedTemporaryFile
 from contextlib import ExitStack
 
 from linehaul.events.parser import parse, Download, Simple
+from linehaul.ua.datastructures import Installer
 
+from cattr.gen import make_dict_unstructure_fn, override
 import sentry_sdk
 from sentry_sdk.integrations.serverless import serverless_function
 from google.api_core import exceptions
@@ -22,6 +25,20 @@ if dsn := os.environ.get("SENTRY_DSN"):
 _cattr = cattr.Converter()
 _cattr.register_unstructure_hook(
     datetime.datetime, lambda o: o.strftime("%Y-%m-%d %H:%M:%S +00:00")
+)
+
+
+def _unstructure_subcommand(subcommand: list[str] | None) -> str | None:
+    if subcommand is None:
+        return None
+    return shlex.join(subcommand)
+
+
+_cattr.register_unstructure_hook(
+    Installer,
+    make_dict_unstructure_fn(
+        Installer, _cattr, subcommand=override(unstruct_hook=_unstructure_subcommand)
+    ),
 )
 
 DEFAULT_PROJECT = os.environ.get("GCP_PROJECT", "the-psf")
