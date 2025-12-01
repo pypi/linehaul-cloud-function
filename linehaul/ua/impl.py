@@ -77,9 +77,9 @@ class RegexUserAgentParser(UserAgentParser):
     def name(self):
         return self._name
 
-    def __call__(self, user_agent):
+    def __call__(self, ua):
         for regex in self._regexes:
-            matched = regex.search(user_agent)
+            matched = regex.search(ua)
 
             # If we've matched this particuar regex, then we'll break the loop here and
             # go onto finishing parsing.
