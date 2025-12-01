@@ -19,6 +19,7 @@ import attr
 class Installer:
     name = attr.ib(type=Optional[str], default=None)
     version = attr.ib(type=Optional[str], default=None)
+    subcommand = attr.ib(type=Optional[list[str]], default=None)
 
 
 @attr.s(slots=True, frozen=True)
