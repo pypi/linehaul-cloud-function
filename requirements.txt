@@ -12,9 +12,9 @@ cachetools==5.3.0 \
     --hash=sha256:13dfddc7b8df938c21a940dfa6557ce6e94a2f1cdfa58eb90c805721d58f2c14 \
     --hash=sha256:429e1a1e845c008ea6c85aa35d4b98b65d6a9763eeef3e37e92728a12d1de9d4
     # via google-auth
-cattrs==25.3.0 \
-    --hash=sha256:1ac88d9e5eda10436c4517e390a4142d88638fe682c436c93db7ce4a277b884a \
-    --hash=sha256:9896e84e0a5bf723bc7b4b68f4481785367ce07a8a02e7e9ee6eb2819bc306ff
+cattrs==26.1.0 \
+    --hash=sha256:d1e0804c42639494d469d08d4f26d6b9de9b8ab26b446db7b5f8c2e97f7c3096 \
+    --hash=sha256:fa239e0f0ec0715ba34852ce813986dfed1e12117e209b816ab87401271cdd40
     # via -r requirements.in
 certifi==2024.7.4 \
     --hash=sha256:5a1e7645bc0ec61a09e26c36f6106dd4cf40c6db3a1fb6352b0244e7fb057c7b \
@@ -116,9 +116,9 @@ google-auth==2.28.1 \
     #   google-cloud-core
     #   google-cloud-pubsub
     #   google-cloud-storage
-google-cloud-bigquery==3.40.0 \
-    --hash=sha256:0469bcf9e3dad3cab65b67cce98180c8c0aacf3253d47f0f8e976f299b49b5ab \
-    --hash=sha256:b3ccb11caf0029f15b29569518f667553fe08f6f1459b959020c83fbbd8f2e68
+google-cloud-bigquery==3.40.1 \
+    --hash=sha256:75afcfb6e007238fe1deefb2182105249321145ff921784fe7b1de2b4ba24506 \
+    --hash=sha256:9082a6b8193aba87bed6a2c79cf1152b524c99bb7e7ac33a785e333c09eac868
     # via -r requirements.in
 google-cloud-core==2.5.0 \
     --hash=sha256:67d977b41ae6c7211ee830c7912e41003ea8194bff15ae7d72fd6f51e57acabc \
@@ -366,9 +366,9 @@ rsa==4.9 \
     --hash=sha256:90260d9058e514786967344d0ef75fa8727eed8a7d2e43ce9f4bcf1b536174f7 \
     --hash=sha256:e38464a49c6c85d7f1351b0126661487a7e0a14a50f1675ec50eb34d4f20ef21
     # via google-auth
-sentry-sdk==2.52.0 \
-    --hash=sha256:931c8f86169fc6f2752cb5c4e6480f0d516112e78750c312e081ababecbaf2ed \
-    --hash=sha256:fa0bec872cfec0302970b2996825723d67390cdd5f0229fb9efed93bd5384899
+sentry-sdk==2.53.0 \
+    --hash=sha256:46e1ed8d84355ae54406c924f6b290c3d61f4048625989a723fd622aab838899 \
+    --hash=sha256:6520ef2c4acd823f28efc55e43eb6ce2e6d9f954a95a3aa96b6fd14871e92b77
     # via -r requirements.in
 six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
