@@ -301,9 +301,9 @@ google-cloud-pubsub==2.36.0 \
     --hash=sha256:96e057e5f83433ce428852095d652c2f7fc193f0f77db1f27cc39186fe69c1f4 \
     --hash=sha256:d6726ccf9373924e0746338dadf8244b9aa1a97a24130b59a2106c926ea37598
     # via -r requirements.in
-google-cloud-storage==3.9.0 \
-    --hash=sha256:2dce75a9e8b3387078cbbdad44757d410ecdb916101f8ba308abf202b6968066 \
-    --hash=sha256:f2d8ca7db2f652be757e92573b2196e10fbc09649b5c016f8b422ad593c641cc
+google-cloud-storage==3.10.0 \
+    --hash=sha256:0072e7783b201e45af78fd9779894cdb6bec2bf922ee932f3fcc16f8bce9b9a3 \
+    --hash=sha256:1aeebf097c27d718d84077059a28d7e87f136f3700212215f1ceeae1d1c5d504
     # via -r requirements.in
 google-crc32c==1.8.0 \
     --hash=sha256:014a7e68d623e9a4222d663931febc3033c5c7c9730785727de2a81f87d5bab8 \
@@ -513,9 +513,9 @@ requests==2.32.5 \
     #   google-api-core
     #   google-cloud-bigquery
     #   google-cloud-storage
-sentry-sdk==2.54.0 \
-    --hash=sha256:2620c2575128d009b11b20f7feb81e4e4e8ae08ec1d36cbc845705060b45cc1b \
-    --hash=sha256:fd74e0e281dcda63afff095d23ebcd6e97006102cdc8e78a29f19ecdf796a0de
+sentry-sdk==2.55.0 \
+    --hash=sha256:3774c4d8820720ca4101548131b9c162f4c9426eb7f4d24aca453012a7470f69 \
+    --hash=sha256:97026981cb15699394474a196b88503a393cbc58d182ece0d3abe12b9bd978d4
     # via -r requirements.in
 six==1.17.0 \
     --hash=sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274 \
