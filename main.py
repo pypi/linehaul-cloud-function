@@ -4,6 +4,7 @@ import datetime
 import os
 import json
 import gzip
+import zlib
 import shlex
 
 from tempfile import NamedTemporaryFile
@@ -86,30 +87,41 @@ def process_fastly_log(data, context):
         download_results_file = stack.enter_context(NamedTemporaryFile())
 
         min_timestamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
-        for line in input_file:
-            try:
-                res = parse(line.decode())
-                min_timestamp = min(min_timestamp, res.timestamp)
-                if res is not None:
-                    if res.__class__.__name__ == Simple.__name__:
-                        simple_results_file.write(
-                            json.dumps(_cattr.unstructure(res)).encode() + b"\n"
-                        )
-                        simple_lines += 1
-                    elif res.__class__.__name__ == Download.__name__:
-                        download_results_file.write(
-                            json.dumps(_cattr.unstructure(res)).encode() + b"\n"
-                        )
-                        download_lines += 1
+        try:
+            for line in input_file:
+                try:
+                    res = parse(line.decode())
+                    min_timestamp = min(min_timestamp, res.timestamp)
+                    if res is not None:
+                        if res.__class__.__name__ == Simple.__name__:
+                            simple_results_file.write(
+                                json.dumps(_cattr.unstructure(res)).encode() + b"\n"
+                            )
+                            simple_lines += 1
+                        elif res.__class__.__name__ == Download.__name__:
+                            download_results_file.write(
+                                json.dumps(_cattr.unstructure(res)).encode() + b"\n"
+                            )
+                            download_lines += 1
+                        else:
+                            unprocessed_file.write(line)
+                            unprocessed_lines += 1
                     else:
                         unprocessed_file.write(line)
                         unprocessed_lines += 1
-                else:
+                except Exception:
                     unprocessed_file.write(line)
                     unprocessed_lines += 1
-            except Exception:
-                unprocessed_file.write(line)
-                unprocessed_lines += 1
+        except (gzip.BadGzipFile, EOFError, zlib.error) as exc:
+            print(
+                f"Skipping malformed gzip gs://{data['bucket']}/{data['name']}: "
+                f"{type(exc).__name__}: {exc}"
+            )
+            try:
+                bob_logs_log_blob.delete()
+            except exceptions.NotFound:
+                pass
+            return
 
         total = unprocessed_lines + simple_lines + download_lines
         print(

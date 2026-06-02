@@ -102,6 +102,43 @@ def test_process_fastly_log(
     assert blobs[expected_unprocessed_filename].data == expected_unprocessed
 
 
+def test_process_fastly_log_deletes_malformed_gzip(monkeypatch):
+    monkeypatch.setenv("GCP_PROJECT", GCP_PROJECT)
+    monkeypatch.setenv("RESULT_BUCKET", RESULT_BUCKET)
+
+    reload(main)
+
+    def _download_to_file(file_handler):
+        file_handler.write(b"not gzip data")
+
+    get_blob_stub = pretend.stub(
+        download_to_file=_download_to_file,
+        delete=pretend.call_recorder(lambda: None),
+    )
+
+    bucket_stub = pretend.stub(
+        get_blob=pretend.call_recorder(lambda a: get_blob_stub),
+    )
+    storage_client_stub = pretend.stub(
+        bucket=pretend.call_recorder(lambda a: bucket_stub),
+    )
+    monkeypatch.setattr(
+        main, "storage", pretend.stub(Client=lambda: storage_client_stub)
+    )
+
+    data = {
+        "name": "poison.log.gz",
+        "bucket": "my-bucket",
+    }
+    context = pretend.stub()
+
+    main.process_fastly_log(data, context)
+
+    assert storage_client_stub.bucket.calls == [pretend.call("my-bucket")]
+    assert bucket_stub.get_blob.calls == [pretend.call("poison.log.gz")]
+    assert get_blob_stub.delete.calls == [pretend.call()]
+
+
 GCP_PROJECT = "my-gcp-project"
 BIGQUERY_DATASET = "my-bigquery-dataset"
 BIGQUERY_SIMPLE_TABLE = "my-simple-table"

@@ -201,7 +201,7 @@ def _value_or_none(value):
 
 def parse(message):
     try:
-        parsed = MESSAGE.parse_string(message, parseAll=True)
+        parsed = MESSAGE.parse_string(message, parse_all=True)
     except ParseException as exc:
         raise UnparseableEvent("{!r} {}".format(message, exc)) from None
 
