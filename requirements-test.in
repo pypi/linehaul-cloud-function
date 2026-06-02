@@ -1,0 +1,5 @@
+mypy
+pytest
+pretend
+hypothesis
+PyYAML
