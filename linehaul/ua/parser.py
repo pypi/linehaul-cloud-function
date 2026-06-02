@@ -217,6 +217,30 @@ def UvUserAgent(user_agent):
         raise UnableToParse from None
 
 
+@_parser.register
+@ua_parser
+def HatchUserAgent(user_agent):
+    # We're only concerned about Hatch user agents.
+    if not user_agent.startswith("Hatch/"):
+        raise UnableToParse
+
+    # Hatch's User-Agent format is: Hatch/{version} {json} HTTPX/{version}
+    # JSON string values may include spaces, so we locate the JSON payload
+    # using the first opening and last closing brace.
+    json_start = user_agent.find("{")
+    if json_start == -1:
+        raise UnableToParse
+
+    json_end = user_agent.rfind("}")
+    if json_end == -1:
+        raise UnableToParse
+
+    try:
+        return json.loads(user_agent[json_start : json_end + 1])
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise UnableToParse from None
+
+
 # TODO: We should probably consider not parsing this specially, and moving it to
 #       just the same as we treat browsers, since we don't really know anything
 #       about it-- including whether or not the version of Python mentioned is
