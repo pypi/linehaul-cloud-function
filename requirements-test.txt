@@ -39,9 +39,9 @@ ast-serialize==0.5.0 \
     --hash=sha256:f66173891548c9f2726bf27957b41cabce12fa679dc6da505ddbde4d4b3b31cf \
     --hash=sha256:f8015cd071ac1339924ee2b8098c93e00e155f30a16f40ec9816fcf84f4753f6
     # via mypy
-hypothesis==6.153.0 \
-    --hash=sha256:11616e5158fc485d62bae19d9cc69333237faa8050ad44a45218254a1ef272bb \
-    --hash=sha256:2aeda9bbb44ae0ee0bfa67ef744a25be05c1f804dca4eb6479c63518dc9f2900
+hypothesis==6.155.1 \
+    --hash=sha256:07c102031612b98d7c1be15ca3608c43e1234d9d07e3a190a53fa01536700196 \
+    --hash=sha256:2753f469df3ba3c483b08e0c37dbcbc41d8316ebb921abcc07493ee9c8a7d187
     # via -r requirements-test.in
 iniconfig==2.3.0 \
     --hash=sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730 \
