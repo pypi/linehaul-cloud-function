@@ -218,6 +218,11 @@ def parse(message):
     elif parsed[0] == "simple":
         data["project"] = parsed.url.split("/")[2]
         result = _cattr.structure(data, Simple)
+    else:
+        # MESSAGE can only match a "download" or "simple" header today, but guard
+        # against a future grammar being added without a matching branch here --
+        # fail cleanly instead of an UnboundLocalError on `result` below.
+        raise UnparseableEvent("{!r} unexpected event header {!r}".format(message, parsed[0]))
 
     try:
         ua = user_agents.parse(parsed.user_agent)
