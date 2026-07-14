@@ -31,7 +31,7 @@ from linehaul.ua import UserAgent, parser as user_agents
 logger = logging.getLogger(__name__)
 
 
-_cattr = cattr.Converter()
+_cattr = cattr.Converter(detailed_validation=False)
 _cattr.register_structure_hook(
     datetime,
     lambda d, t: datetime.strptime(d[5:-4], "%d %b %Y %H:%M:%S").replace(
@@ -54,8 +54,6 @@ NullValue = _NullValue()
 printables = "".join(set(_printables + " " + "\t") - {"|", "@"})
 
 PIPE = L("|").suppress()
-
-AT = L("@").suppress()
 
 NULL = L("(null)")
 NULL.set_parse_action(lambda s, l, t: NullValue)
@@ -108,16 +106,6 @@ USER_AGENT = rest_of_line
 USER_AGENT = USER_AGENT.set_results_name("user_agent")
 USER_AGENT.set_name("UserAgent")
 
-V1_HEADER = OptionalItem(L("1").suppress() + AT)
-
-MESSAGE_v1 = V1_HEADER + REQUEST + PIPE + PROJECT + PIPE + USER_AGENT
-MESSAGE_v1.leave_whitespace()
-
-V2_HEADER = L("2").suppress() + AT
-
-MESSAGE_v2 = V2_HEADER + REQUEST + PIPE + TLS + PIPE + PROJECT + PIPE + USER_AGENT
-MESSAGE_v2.leave_whitespace()
-
 V3_HEADER = L("download")
 MESSAGE_v3 = (
     V3_HEADER + PIPE + REQUEST + PIPE + TLS + PIPE + PROJECT + PIPE + USER_AGENT
@@ -128,7 +116,7 @@ MESSAGE_SIMPLE = (
     SIMPLE_HEADER + PIPE + REQUEST + PIPE + TLS + PIPE + PIPE + PIPE + PIPE + USER_AGENT
 )
 
-MESSAGE = MESSAGE_SIMPLE | MESSAGE_v3 | MESSAGE_v2 | MESSAGE_v1
+MESSAGE = MESSAGE_SIMPLE | MESSAGE_v3
 
 
 @enum.unique
@@ -223,8 +211,6 @@ def parse(message):
     elif parsed[0] == "simple":
         data["project"] = parsed.url.split("/")[2]
         result = _cattr.structure(data, Simple)
-    else:
-        result = _cattr.structure(data, Download)
 
     try:
         ua = user_agents.parse(parsed.user_agent)

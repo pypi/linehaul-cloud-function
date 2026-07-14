@@ -42,8 +42,7 @@ def _load_event_fixtures(fixture_dir):
             yield event, expected
 
 
-# @pytest.mark.parametrize(("event_data", "expected"), _load_event_fixtures(FIXTURE_DIR))
-@pytest.mark.skip(reason="needs updated!")
+@pytest.mark.parametrize(("event_data", "expected"), list(_load_event_fixtures(FIXTURE_DIR)))
 def test_download_parsing(event_data, expected):
     if inspect.isclass(expected) and issubclass(expected, Exception):
         with pytest.raises(expected):
