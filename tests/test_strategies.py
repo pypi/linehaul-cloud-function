@@ -12,7 +12,15 @@
 
 import itertools
 
-from hypothesis import assume, given, strategies as st, reproduce_failure, seed
+from hypothesis import (
+    assume,
+    given,
+    settings,
+    strategies as st,
+    reproduce_failure,
+    seed,
+    HealthCheck,
+)
 
 from .strategies import version as st_version
 
@@ -25,6 +33,7 @@ class TestVersionStrategy:
             reversed(list(itertools.dropwhile(lambda i: i == 0, reversed(version))))
         )
 
+    @settings(suppress_health_check=[HealthCheck.too_slow])
     @given(
         st.data(),
         st.tuples(
@@ -35,6 +44,7 @@ class TestVersionStrategy:
         version = data.draw(st_version(min_version=min_version))
         assert self._ver_2_list(version) >= self._ver_2_list(min_version)
 
+    @settings(suppress_health_check=[HealthCheck.too_slow])
     @given(
         st.data(),
         st.tuples(
@@ -47,6 +57,7 @@ class TestVersionStrategy:
         version = data.draw(st_version(max_version=max_version))
         assert self._ver_2_list(version) <= self._ver_2_list(max_version)
 
+    @settings(suppress_health_check=[HealthCheck.too_slow])
     @given(
         st.data(),
         st.tuples(
@@ -73,16 +84,19 @@ class TestVersionStrategy:
             <= self._ver_2_list(max_version)
         )
 
+    @settings(suppress_health_check=[HealthCheck.too_slow])
     @given(st.data(), st.integers(min_value=1, max_value=100))
     def test_produces_with_more_digits_than_min(self, data, min_digits):
         version = data.draw(st_version(min_digits=min_digits))
         assert len(version.split(".")) >= min_digits
 
+    @settings(suppress_health_check=[HealthCheck.too_slow])
     @given(st.data(), st.integers(min_value=2, max_value=100))
     def test_produces_with_less_digits_than_max(self, data, max_digits):
         version = data.draw(st_version(max_digits=max_digits))
         assert len(version.split(".")) <= max_digits
 
+    @settings(suppress_health_check=[HealthCheck.too_slow])
     @given(
         st.data(),
         st.tuples(
@@ -95,6 +109,7 @@ class TestVersionStrategy:
         version = data.draw(st_version(min_digits=min_digits, max_digits=max_digits))
         assert min_digits <= len(version.split(".")) <= max_digits
 
+    @settings(suppress_health_check=[HealthCheck.too_slow])
     @given(
         st.data(),
         st.tuples(
