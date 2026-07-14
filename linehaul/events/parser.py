@@ -31,6 +31,13 @@ from linehaul.ua import UserAgent, parser as user_agents
 logger = logging.getLogger(__name__)
 
 
+# detailed_validation=False makes cattrs "fail fast": the first validator error
+# during structuring propagates as-is (e.g. a plain TypeError/ValueError) instead
+# of being wrapped in a cattrs ClassValidationError (an ExceptionGroup, the
+# library default since cattrs 22.1). We rely on this because a malformed line
+# should just raise so the caller can shunt it to the unprocessed/ bucket -- the
+# exception type is never surfaced to a human, so the richer aggregated error is
+# pure overhead here, and the parser tests assert the bare TypeError/ValueError.
 _cattr = cattr.Converter(detailed_validation=False)
 _cattr.register_structure_hook(
     datetime,
