@@ -16,31 +16,6 @@ from hypothesis import strategies as st
 INF = float("inf")
 
 
-@st.composite
-def line_delimited_data(draw, max_line_size, min_lines=1):
-    n = draw(max_line_size)
-    data = st.binary(min_size=1, max_size=n).filter(lambda d: b"\n" not in d)
-    lines = draw(
-        st.lists(data, min_size=min_lines).filter(
-            lambda l: sum(map(len, l)) + len(l) <= n
-        )
-    )
-    return b"\n".join(lines) + b"\n"
-
-
-@st.composite
-def chunked(draw, source):
-    data = draw(source)
-
-    chunk_sizes = [0]
-    chunk_sizes += draw(
-        st.lists(st.integers(0, len(data) - 1), unique=True).map(sorted)
-    )
-    chunk_sizes += [len(data)]
-
-    return [data[u:v] for u, v in zip(chunk_sizes, chunk_sizes[1:])]
-
-
 def _none_for_inf(v):
     if v is INF:
         return None
