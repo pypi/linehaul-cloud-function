@@ -31,7 +31,14 @@ from linehaul.ua import UserAgent, parser as user_agents
 logger = logging.getLogger(__name__)
 
 
-_cattr = cattr.Converter()
+# detailed_validation=False makes cattrs "fail fast": the first validator error
+# during structuring propagates as-is (e.g. a plain TypeError/ValueError) instead
+# of being wrapped in a cattrs ClassValidationError (an ExceptionGroup, the
+# library default since cattrs 22.1). We rely on this because a malformed line
+# should just raise so the caller can shunt it to the unprocessed/ bucket -- the
+# exception type is never surfaced to a human, so the richer aggregated error is
+# pure overhead here, and the parser tests assert the bare TypeError/ValueError.
+_cattr = cattr.Converter(detailed_validation=False)
 _cattr.register_structure_hook(
     datetime,
     lambda d, t: datetime.strptime(d[5:-4], "%d %b %Y %H:%M:%S").replace(
@@ -54,8 +61,6 @@ NullValue = _NullValue()
 printables = "".join(set(_printables + " " + "\t") - {"|", "@"})
 
 PIPE = L("|").suppress()
-
-AT = L("@").suppress()
 
 NULL = L("(null)")
 NULL.set_parse_action(lambda s, l, t: NullValue)
@@ -108,16 +113,6 @@ USER_AGENT = rest_of_line
 USER_AGENT = USER_AGENT.set_results_name("user_agent")
 USER_AGENT.set_name("UserAgent")
 
-V1_HEADER = OptionalItem(L("1").suppress() + AT)
-
-MESSAGE_v1 = V1_HEADER + REQUEST + PIPE + PROJECT + PIPE + USER_AGENT
-MESSAGE_v1.leave_whitespace()
-
-V2_HEADER = L("2").suppress() + AT
-
-MESSAGE_v2 = V2_HEADER + REQUEST + PIPE + TLS + PIPE + PROJECT + PIPE + USER_AGENT
-MESSAGE_v2.leave_whitespace()
-
 V3_HEADER = L("download")
 MESSAGE_v3 = (
     V3_HEADER + PIPE + REQUEST + PIPE + TLS + PIPE + PROJECT + PIPE + USER_AGENT
@@ -128,7 +123,7 @@ MESSAGE_SIMPLE = (
     SIMPLE_HEADER + PIPE + REQUEST + PIPE + TLS + PIPE + PIPE + PIPE + PIPE + USER_AGENT
 )
 
-MESSAGE = MESSAGE_SIMPLE | MESSAGE_v3 | MESSAGE_v2 | MESSAGE_v1
+MESSAGE = MESSAGE_SIMPLE | MESSAGE_v3
 
 
 @enum.unique
@@ -224,7 +219,10 @@ def parse(message):
         data["project"] = parsed.url.split("/")[2]
         result = _cattr.structure(data, Simple)
     else:
-        result = _cattr.structure(data, Download)
+        # MESSAGE can only match a "download" or "simple" header today, but guard
+        # against a future grammar being added without a matching branch here --
+        # fail cleanly instead of an UnboundLocalError on `result` below.
+        raise UnparseableEvent("{!r} unexpected event header {!r}".format(message, parsed[0]))
 
     try:
         ua = user_agents.parse(parsed.user_agent)
