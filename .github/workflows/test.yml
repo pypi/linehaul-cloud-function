@@ -24,4 +24,4 @@ jobs:
     - name: Lint
       run: python -m mypy -p linehaul
     - name: Test
-      run: python -m pytest test_functions.py tests/unit
+      run: python -m pytest test_functions.py tests
