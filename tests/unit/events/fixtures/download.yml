@@ -69,3 +69,343 @@
     tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
     country_code: JP
     details: null
+
+
+# The user agent is everything after the 9th pipe, taken verbatim -- it may
+# contain pipes and "@", both of which are illegal in every other field.
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|Wget/1.20.3 | curl@example.com | thing
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details:
+      installer:
+        name: Browser
+
+# Leading whitespace on the user agent is kept (so this is an unknown UA), unlike
+# every other field, where it is stripped.
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|   bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details: null
+
+# An empty user agent is allowed by the grammar, it just doesn't parse as a UA.
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details: null
+
+
+# "@" is not a legal character in any of the first nine fields, so a line
+# containing one anywhere but in the user agent is unparseable.
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/foo@bar/x-1.0.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result: !!python/name:linehaul.events.parser.UnparseableEvent ''
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|J@|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result: !!python/name:linehaul.events.parser.UnparseableEvent ''
+
+
+# Leading whitespace inside a field is stripped, trailing whitespace is kept.
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT| US|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: US
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|US |/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: "US "
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+# A whitespace only country code parses as an absent country code.
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|   |/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: null
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+# The country code is *not* nullable, so a literal "(null)" is kept as a string.
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|(null)|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: "(null)"
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+
+# Spaces are legal *inside* a field.
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+
+# Tabs are expanded (tabsize 8, column aware) before the line is parsed, in every
+# field including the user agent.
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ab\tcd/x-1.0.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: "/packages/ab  cd/x-1.0.tar.gz"
+    project: cfn-flip
+    file:
+      filename: x-1.0.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|pip/20.0.2 {\"cpu\":\"x86\t64\",\"python\":\"3.8.5\"}"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details:
+      python: "3.8.5"
+      cpu: "x86    64"
+
+
+# A nullable field that starts with "(null)" but doesn't end there is rejected,
+# but a value that merely looks like the start of it parses as an ordinary value.
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|(null)x|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result: !!python/name:linehaul.events.parser.UnparseableEvent ''
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|(null) x|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
+  result: !!python/name:linehaul.events.parser.UnparseableEvent ''
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|(nullx|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: "(nullx"
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: "(nullx"
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+
+# The package type is a closed set of literals, so anything else is unparseable,
+# including a known literal with junk appended.
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|wheelie|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result: !!python/name:linehaul.events.parser.UnparseableEvent ''
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdistfoo|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result: !!python/name:linehaul.events.parser.UnparseableEvent ''
+
+# Whitespace around the package type literal is tolerated but not captured, which
+# is asymmetric with the ordinary word fields above (they keep trailing spaces).
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|  sdist  |bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+
+# Leading whitespace on the line as a whole is skipped.
+- event: "   download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+# Whitespace is tolerated around the delimiters, though here it leaves a trailing
+# space on the timestamp, which the timestamp hook then chokes on.
+- event: "download | Fri, 20 Jul 2018 02:19:19 GMT | JP | /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz | TLSv1.2 | ECDHE-RSA-AES128-GCM-SHA256 | cfn-flip | 1.0.3 | sdist |bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
+  result: !!python/name:builtins.ValueError ''
+
+
+# Trailing whitespace after the user agent is allowed, anything else is not.
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)\n"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)\n\n"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+# A "\r\n" line ending is accepted too, but the "\r" lands *inside* the user agent
+# (it only ever stops at a "\n"), which makes the UA unrecognisable.
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)\r\n"
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details: null
+
+# Anything other than whitespace after the newline is unparseable.
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)\nmore"
+  result: !!python/name:linehaul.events.parser.UnparseableEvent ''
+
+
+# The required fields cannot be empty.
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP||TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result: !!python/name:linehaul.events.parser.UnparseableEvent ''
+- event: download||JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result: !!python/name:linehaul.events.parser.UnparseableEvent ''
+
+# Non ASCII characters are not legal in any of the first nine fields.
+- event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|caf\xE9|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
+  result: !!python/name:linehaul.events.parser.UnparseableEvent ''
