@@ -1,7 +1,7 @@
 steps:
 - name: 'gcr.io/cloud-builders/gcloud'
   args: [
-    'functions', 'deploy', 'linehaul-ingestor',
+    'functions', 'deploy', 'linehaul-ingestor-v2',
     '--gen2',
     '--trigger-resource', 'linehaul-logs',
     '--trigger-event', 'google.storage.object.finalize',
@@ -13,7 +13,7 @@ steps:
   waitFor: ['-']
 - name: 'gcr.io/cloud-builders/gcloud'
   args: [
-    'functions', 'deploy', 'linehaul-publisher',
+    'functions', 'deploy', 'linehaul-publisher-v2',
     '--gen2',
     '--trigger-topic', 'linehaul-publisher-topic',
     '--runtime', 'python311',
