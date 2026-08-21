@@ -1,0 +1,100 @@
+# Basic Example
+- event: simple|Fri, 20 Jul 2018 02:19:19 GMT|JP|/simple/cfn-flip/|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256||||bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  type: simple
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /simple/cfn-flip/
+    project: cfn-flip
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+
+# Country Code should be optional, and a whitespace only one counts as absent.
+- event: simple|Fri, 20 Jul 2018 02:19:19 GMT||/simple/cfn-flip/|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256||||bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  type: simple
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /simple/cfn-flip/
+    project: cfn-flip
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: null
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+- event: "simple|Fri, 20 Jul 2018 02:19:19 GMT|  |/simple/cfn-flip/|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256||||bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
+  type: simple
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /simple/cfn-flip/
+    project: cfn-flip
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: null
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+
+# The TLS details are nullable.
+- event: simple|Fri, 20 Jul 2018 02:19:19 GMT|JP|/simple/cfn-flip/|(null)|(null)||||bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  type: simple
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /simple/cfn-flip/
+    project: cfn-flip
+    tls_protocol: null
+    tls_cipher: null
+    country_code: JP
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+
+# The user agent may contain pipes, they don't split the message.
+- event: simple|Fri, 20 Jul 2018 02:19:19 GMT|JP|/simple/cfn-flip/|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256||||Wget/1.20.3 | thing
+  type: simple
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /simple/cfn-flip/
+    project: cfn-flip
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details:
+      installer:
+        name: Browser
+
+
+# A trailing newline is allowed.
+- event: "simple|Fri, 20 Jul 2018 02:19:19 GMT|JP|/simple/cfn-flip/|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256||||bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)\n"
+  type: simple
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /simple/cfn-flip/
+    project: cfn-flip
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+
+# The project, version and package type fields must be empty for a simple message.
+- event: simple|Fri, 20 Jul 2018 02:19:19 GMT|JP|/simple/cfn-flip/|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|||x|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result: !!python/name:linehaul.events.parser.UnparseableEvent ''
+
+
+# "@" is illegal in the URL here too.
+- event: simple|Fri, 20 Jul 2018 02:19:19 GMT|JP|/simple/foo@bar/|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256||||bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result: !!python/name:linehaul.events.parser.UnparseableEvent ''
