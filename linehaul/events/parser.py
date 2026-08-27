@@ -156,6 +156,8 @@ def parse(message):
         if parsed is None:
             raise UnparseableEvent("{!r} does not match a known event".format(message))
 
+    # A "(null)" field leaves its capture group unmatched (see _nullable), so the
+    # groupdict already maps it to None -- no explicit null conversion is needed.
     parsed = parsed.groupdict()
 
     url = parsed["url"]
