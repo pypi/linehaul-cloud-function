@@ -48,6 +48,9 @@ class UnparseableEvent(Exception):
     pass
 
 
+# Slightly looser than pyparsing's default whitespace (" \t\n"): "\r" is skipped
+# around delimiters too, so a stray carriage return between fields no longer
+# rejects the line.
 _WS = r"[ \t\n\r]*+"
 _WORD = r"[!-?A-{}~][ \t!-?A-{}~]*+"
 
