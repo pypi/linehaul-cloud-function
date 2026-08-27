@@ -142,16 +142,6 @@ class Simple:
     details = attr.ib(type=Optional[UserAgent], default=None)
 
 
-def _value_or_none(value):
-    # A missing regex group (an absent country code, or a field that matched the
-    # "(null)" literal) comes back as None already; a field that is only present in
-    # one of the two message shapes is looked up with a "" default.
-    if value is None or value == "":
-        return None
-    else:
-        return value
-
-
 def parse(message):
     # parse_string() used to expandtabs() the input before parsing, so every
     # captured value -- including the user agent -- had its tabs expanded. Keep
@@ -172,21 +162,21 @@ def parse(message):
 
     data = {}
     data["timestamp"] = parsed["timestamp"]
-    data["tls_protocol"] = _value_or_none(parsed["tls_protocol"])
-    data["tls_cipher"] = _value_or_none(parsed["tls_cipher"])
-    data["country_code"] = _value_or_none(parsed["country_code"])
+    data["tls_protocol"] = parsed["tls_protocol"]
+    data["tls_cipher"] = parsed["tls_cipher"]
+    data["country_code"] = parsed["country_code"]
     data["url"] = url
     data["file"] = {}
     data["file"]["filename"] = posixpath.basename(url)
-    data["file"]["project"] = _value_or_none(parsed.get("project_name"))
-    data["file"]["version"] = _value_or_none(parsed.get("version"))
-    data["file"]["type"] = _value_or_none(parsed.get("package_type"))
+    data["file"]["project"] = parsed.get("project_name")
+    data["file"]["version"] = parsed.get("version")
+    data["file"]["type"] = parsed.get("package_type")
 
     if simple:
         data["project"] = url.split("/")[2]
         result = _cattr.structure(data, Simple)
     else:
-        data["project"] = _value_or_none(parsed["project_name"])
+        data["project"] = parsed["project_name"]
         result = _cattr.structure(data, Download)
 
     try:
