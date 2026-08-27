@@ -48,35 +48,6 @@ class UnparseableEvent(Exception):
     pass
 
 
-# These two regexes replace what used to be a pyparsing grammar. The wire format
-# is pipe delimited with a fixed number of fields, so a grammar was more machinery
-# than the job needs -- pyparsing accounted for ~60% of the per line cost. They are
-# a deliberately faithful translation of that grammar, quirks included:
-#
-#   * A field is pyparsing's ``Word(printables)`` minus "|" and "@", plus space and
-#     tab. So "@" anywhere in the first nine fields rejects the whole line, and
-#     spaces/tabs *inside* a field are legal and retained. Non ASCII, DEL and
-#     control characters reject.
-#   * pyparsing skips its whitespace set (" \n\t\r") before each token, so leading
-#     whitespace on a field is stripped from the captured value while trailing
-#     whitespace is kept, and whitespace is tolerated around every delimiter.
-#   * The nullable fields use an ordered alternation with a negative lookahead so
-#     that "(null)x" rejects (pyparsing committed to the "(null)" literal and then
-#     failed on the missing pipe) while "(nullx" still matches as a plain word.
-#   * The user agent was ``rest_of_line``, i.e. everything up to a newline, taken
-#     verbatim -- it may contain "|" and "@" -- and ``parse_all=True`` allowed only
-#     trailing whitespace after it.
-#
-# NB: ``parse_string`` expanded tabs before parsing, so ``parse`` below must call
-# ``str.expandtabs()`` to keep captured values byte for byte identical.
-#
-# The quantifiers are possessive (3.11+). A field may contain spaces and is also
-# preceded and followed by optional whitespace, so an ordinary greedy quantifier
-# leaves the split between "whitespace" and "field content" ambiguous; with nine
-# such fields a line that fails late (say, an invalid package type) backtracks
-# through every combination and takes exponential time. pyparsing had no such
-# problem because its Word is maximal munch and never gives characters back --
-# which is exactly what a possessive quantifier expresses.
 _WS = r"[ \t\n\r]*+"
 _WORD = r"[!-?A-{}~][ \t!-?A-{}~]*+"
 
