@@ -31,12 +31,14 @@ EVENT_TYPES = {"download": Download, "simple": Simple}
 def _load_event_fixtures(fixture_dir):
     fixtures = os.listdir(fixture_dir)
     for filename in fixtures:
+        # Keyed strictly off the filename so an unrecognized fixture file fails
+        # loudly at collection instead of silently structuring as a Download.
+        event_type = EVENT_TYPES[os.path.splitext(filename)[0]]
         with open(os.path.join(fixture_dir, filename), "r") as fp:
             fixtures = yaml.load(fp.read(), Loader=yaml.Loader)
         for fixture in fixtures:
             event = fixture.pop("event")
             result = fixture.pop("result")
-            event_type = EVENT_TYPES[fixture.pop("type", "download")]
             expected = (
                 _cattr.structure(result, event_type)
                 if isinstance(result, dict)

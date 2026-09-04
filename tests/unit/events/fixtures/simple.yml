@@ -1,6 +1,5 @@
 # Basic Example
 - event: simple|Fri, 20 Jul 2018 02:19:19 GMT|JP|/simple/cfn-flip/|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256||||bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
-  type: simple
   result:
     timestamp: Fri, 20 Jul 2018 02:19:19 GMT
     url: /simple/cfn-flip/
@@ -16,7 +15,6 @@
 
 # Country Code should be optional, and a whitespace only one counts as absent.
 - event: simple|Fri, 20 Jul 2018 02:19:19 GMT||/simple/cfn-flip/|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256||||bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
-  type: simple
   result:
     timestamp: Fri, 20 Jul 2018 02:19:19 GMT
     url: /simple/cfn-flip/
@@ -29,7 +27,6 @@
         name: bandersnatch
         version: 2.2.1
 - event: "simple|Fri, 20 Jul 2018 02:19:19 GMT|  |/simple/cfn-flip/|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256||||bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
-  type: simple
   result:
     timestamp: Fri, 20 Jul 2018 02:19:19 GMT
     url: /simple/cfn-flip/
@@ -45,7 +42,6 @@
 
 # The TLS details are nullable.
 - event: simple|Fri, 20 Jul 2018 02:19:19 GMT|JP|/simple/cfn-flip/|(null)|(null)||||bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
-  type: simple
   result:
     timestamp: Fri, 20 Jul 2018 02:19:19 GMT
     url: /simple/cfn-flip/
@@ -61,7 +57,6 @@
 
 # The user agent may contain pipes, they don't split the message.
 - event: simple|Fri, 20 Jul 2018 02:19:19 GMT|JP|/simple/cfn-flip/|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256||||Wget/1.20.3 | thing
-  type: simple
   result:
     timestamp: Fri, 20 Jul 2018 02:19:19 GMT
     url: /simple/cfn-flip/
@@ -76,7 +71,6 @@
 
 # A trailing newline is allowed.
 - event: "simple|Fri, 20 Jul 2018 02:19:19 GMT|JP|/simple/cfn-flip/|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256||||bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)\n"
-  type: simple
   result:
     timestamp: Fri, 20 Jul 2018 02:19:19 GMT
     url: /simple/cfn-flip/
