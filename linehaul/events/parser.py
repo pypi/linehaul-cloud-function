@@ -48,9 +48,7 @@ class UnparseableEvent(Exception):
     pass
 
 
-# Slightly looser than pyparsing's default whitespace (" \t\n"): "\r" is skipped
-# around delimiters too, so a stray carriage return between fields no longer
-# rejects the line.
+# pyparsing's default whitespace (" \t\n\r"), skipped around delimiters.
 _WS = r"[ \t\n\r]*+"
 _WORD = r"[!-?A-{}~][ \t!-?A-{}~]*+"
 
@@ -72,8 +70,8 @@ _COMMON = (
     rf"{_WS}{_nullable('tls_cipher')}{_WS}\|"
 )
 
-# Two separate patterns rather than one alternation: duplicate group names across
-# branches are a syntax error before Python 3.12, and we target 3.11.
+# Two separate patterns rather than one alternation: stdlib re disallows
+# duplicate group names, even across alternation branches.
 MESSAGE_v3 = re.compile(
     rf"\A{_WS}download{_COMMON}{_WS}{_nullable('project_name')}{_WS}\|"
     rf"{_WS}{_nullable('version')}{_WS}\|{_WS}{_PACKAGE_TYPE}{_WS}\|{_TAIL}"
