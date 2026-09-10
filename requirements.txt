@@ -289,9 +289,9 @@ google-auth[pyopenssl]==2.49.1 \
     #   google-cloud-core
     #   google-cloud-pubsub
     #   google-cloud-storage
-google-cloud-bigquery==3.44.0 \
-    --hash=sha256:30651ae469b419f450b9c96581fd4942e2e060490df1ac0314bf379f16883215 \
-    --hash=sha256:ac2f0a6ab61a3c742ba4674dc220fb98461c13e1def96fe7a980ef7d5e0c0285
+google-cloud-bigquery==3.45.0 \
+    --hash=sha256:30637314d67526cbaefebfb9106c5a41c5f30a137ace404531148f09a6b487a6 \
+    --hash=sha256:5a799856825f47743ce561802cbd01b4d5c70062b36a942cfef5146017ecf0a4
     # via -r requirements.in
 google-cloud-core==2.5.0 \
     --hash=sha256:67d977b41ae6c7211ee830c7912e41003ea8194bff15ae7d72fd6f51e57acabc \
@@ -299,9 +299,9 @@ google-cloud-core==2.5.0 \
     # via
     #   google-cloud-bigquery
     #   google-cloud-storage
-google-cloud-pubsub==2.39.2 \
-    --hash=sha256:934a3ab7496a6da09cd97d866bef3e47092e904688a66f60750895a7484bd585 \
-    --hash=sha256:b1295c6641032aff1dabbddf495b10642a5b547f6783ee4c6bb3365682e71354
+google-cloud-pubsub==2.40.0 \
+    --hash=sha256:ec4a6488d5da741499902c55eeb5273812c414013d32b1e0c5548179f31cd934 \
+    --hash=sha256:fe7d7eb76f753f6aebcdda2f4dff536748d1999147f64d955a554f572abb1585
     # via -r requirements.in
 google-cloud-storage==3.13.1 \
     --hash=sha256:98208de6c21e85cecd3eb44551894efff33d98365500e178867d4305854a770a \
