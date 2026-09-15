@@ -13,28 +13,34 @@
 import inspect
 import os
 import os.path
+import time
 
 import pytest
 import yaml
 
 from hypothesis import given, strategies as st
 
-from linehaul.events.parser import Download, UnparseableEvent, parse, _cattr
+from linehaul.events.parser import Download, Simple, UnparseableEvent, parse, _cattr
 
 
 FIXTURE_DIR = os.path.join(os.path.dirname(__file__), "fixtures")
+
+EVENT_TYPES = {"download": Download, "simple": Simple}
 
 
 def _load_event_fixtures(fixture_dir):
     fixtures = os.listdir(fixture_dir)
     for filename in fixtures:
+        # Keyed strictly off the filename so an unrecognized fixture file fails
+        # loudly at collection instead of silently structuring as a Download.
+        event_type = EVENT_TYPES[os.path.splitext(filename)[0]]
         with open(os.path.join(fixture_dir, filename), "r") as fp:
             fixtures = yaml.load(fp.read(), Loader=yaml.Loader)
         for fixture in fixtures:
             event = fixture.pop("event")
             result = fixture.pop("result")
             expected = (
-                _cattr.structure(result, Download)
+                _cattr.structure(result, event_type)
                 if isinstance(result, dict)
                 else result
             )
@@ -55,3 +61,15 @@ def test_download_parsing(event_data, expected):
 def test_invalid_event(data):
     with pytest.raises(UnparseableEvent):
         parse(data)
+
+
+def test_rejects_pathological_line_quickly():
+    # Every field may contain spaces and is also surrounded by optional
+    # whitespace, so without possessive quantifiers this line -- which only fails
+    # at the very last field -- backtracks exponentially. It used to take minutes.
+    event = "download|" + ("a" + " " * 20 + "|") * 8 + "some user agent"
+
+    start = time.perf_counter()
+    with pytest.raises(UnparseableEvent):
+        parse(event)
+    assert time.perf_counter() - start < 5
