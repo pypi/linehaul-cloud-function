@@ -13,6 +13,7 @@
 import enum
 import logging
 import posixpath
+import re
 
 from datetime import datetime, timezone
 from typing import Optional
@@ -20,10 +21,6 @@ from typing import Optional
 import attr
 import attr.validators
 import cattr
-
-from pyparsing import Literal as L, Word, Optional as OptionalItem
-from pyparsing import printables as _printables, rest_of_line
-from pyparsing import ParseException
 
 from linehaul.ua import UserAgent, parser as user_agents
 
@@ -51,79 +48,35 @@ class UnparseableEvent(Exception):
     pass
 
 
-class _NullValue:
-    pass
+# pyparsing's default whitespace (" \t\n\r"), skipped around delimiters.
+_WS = r"[ \t\n\r]*+"
+_WORD = r"[!-?A-{}~][ \t!-?A-{}~]*+"
 
 
-NullValue = _NullValue()
+def _nullable(name):
+    return rf"(?:\(null\)|(?P<{name}>(?!\(null\)){_WORD}))"
 
 
-printables = "".join(set(_printables + " " + "\t") - {"|", "@"})
-
-PIPE = L("|").suppress()
-
-NULL = L("(null)")
-NULL.set_parse_action(lambda s, l, t: NullValue)
-
-TIMESTAMP = Word(printables).set_name("Timestamp")
-TIMESTAMP = TIMESTAMP.set_results_name("timestamp")
-
-COUNTRY_CODE = Word(printables).set_name("Country Code")
-COUNTRY_CODE = COUNTRY_CODE.set_results_name("country_code")
-
-URL = Word(printables).set_name("URL")
-URL = URL.set_results_name("url")
-
-REQUEST = TIMESTAMP + PIPE + OptionalItem(COUNTRY_CODE) + PIPE + URL
-
-PROJECT_NAME = NULL | Word(printables)
-PROJECT_NAME = PROJECT_NAME.set_results_name("project_name")
-PROJECT_NAME.set_name("Project Name")
-
-VERSION = NULL | Word(printables)
-VERSION = VERSION.set_results_name("version")
-VERSION.set_name("Version")
-
-PACKAGE_TYPE = NULL | (
-    L("sdist")
-    | L("bdist_wheel")
-    | L("bdist_dmg")
-    | L("bdist_dumb")
-    | L("bdist_egg")
-    | L("bdist_msi")
-    | L("bdist_rpm")
-    | L("bdist_wininst")
+_PACKAGE_TYPE = (
+    r"(?:\(null\)|(?P<package_type>sdist|bdist_wheel|bdist_dmg|bdist_dumb"
+    r"|bdist_egg|bdist_msi|bdist_rpm|bdist_wininst))"
 )
-PACKAGE_TYPE = PACKAGE_TYPE.set_results_name("package_type")
-PACKAGE_TYPE.set_name("Package Type")
-
-PROJECT = PROJECT_NAME + PIPE + VERSION + PIPE + PACKAGE_TYPE
-
-TLS_PROTOCOL = NULL | Word(printables)
-TLS_PROTOCOL = TLS_PROTOCOL.set_results_name("tls_protocol")
-TLS_PROTOCOL.set_name("TLS Protocol")
-
-TLS_CIPHER = NULL | Word(printables)
-TLS_CIPHER = TLS_CIPHER.set_results_name("tls_cipher")
-TLS_CIPHER.set_name("TLS Cipher")
-
-TLS = TLS_PROTOCOL + PIPE + TLS_CIPHER
-
-USER_AGENT = rest_of_line
-USER_AGENT = USER_AGENT.set_results_name("user_agent")
-USER_AGENT.set_name("UserAgent")
-
-V3_HEADER = L("download")
-MESSAGE_v3 = (
-    V3_HEADER + PIPE + REQUEST + PIPE + TLS + PIPE + PROJECT + PIPE + USER_AGENT
+_TAIL = r"(?P<user_agent>[^\n]*+)(?:\n[ \t\n\r]*+)?\Z"
+_COMMON = (
+    rf"{_WS}\|{_WS}(?P<timestamp>{_WORD}){_WS}\|"
+    rf"(?:{_WS}(?P<country_code>{_WORD}))?{_WS}\|"
+    rf"{_WS}(?P<url>{_WORD}){_WS}\|"
+    rf"{_WS}{_nullable('tls_protocol')}{_WS}\|"
+    rf"{_WS}{_nullable('tls_cipher')}{_WS}\|"
 )
 
-SIMPLE_HEADER = L("simple")
-MESSAGE_SIMPLE = (
-    SIMPLE_HEADER + PIPE + REQUEST + PIPE + TLS + PIPE + PIPE + PIPE + PIPE + USER_AGENT
+# Two separate patterns rather than one alternation: stdlib re disallows
+# duplicate group names, even across alternation branches.
+MESSAGE_v3 = re.compile(
+    rf"\A{_WS}download{_COMMON}{_WS}{_nullable('project_name')}{_WS}\|"
+    rf"{_WS}{_nullable('version')}{_WS}\|{_WS}{_PACKAGE_TYPE}{_WS}\|{_TAIL}"
 )
-
-MESSAGE = MESSAGE_SIMPLE | MESSAGE_v3
+MESSAGE_SIMPLE = re.compile(rf"\A{_WS}simple{_COMMON}{_WS}\|{_WS}\|{_WS}\|{_TAIL}")
 
 
 @enum.unique
@@ -187,45 +140,47 @@ class Simple:
     details = attr.ib(type=Optional[UserAgent], default=None)
 
 
-def _value_or_none(value):
-    if value is NullValue or value == "":
-        return None
-    else:
-        return value
-
-
 def parse(message):
-    try:
-        parsed = MESSAGE.parse_string(message, parse_all=True)
-    except ParseException as exc:
-        raise UnparseableEvent("{!r} {}".format(message, exc)) from None
+    # parse_string() used to expandtabs() the input before parsing, so every
+    # captured value -- including the user agent -- had its tabs expanded. Keep
+    # doing it, or stored values would silently change.
+    expanded = message.expandtabs()
+
+    simple = True
+    parsed = MESSAGE_SIMPLE.match(expanded)
+    if parsed is None:
+        simple = False
+        parsed = MESSAGE_v3.match(expanded)
+        if parsed is None:
+            raise UnparseableEvent("{!r} does not match a known event".format(message))
+
+    # A "(null)" field leaves its capture group unmatched (see _nullable), so the
+    # groupdict already maps it to None -- no explicit null conversion is needed.
+    parsed = parsed.groupdict()
+
+    url = parsed["url"]
 
     data = {}
-    data["timestamp"] = parsed.timestamp
-    data["tls_protocol"] = _value_or_none(parsed.tls_protocol)
-    data["tls_cipher"] = _value_or_none(parsed.tls_cipher)
-    data["country_code"] = _value_or_none(parsed.country_code)
-    data["url"] = parsed.url
+    data["timestamp"] = parsed["timestamp"]
+    data["tls_protocol"] = parsed["tls_protocol"]
+    data["tls_cipher"] = parsed["tls_cipher"]
+    data["country_code"] = parsed["country_code"]
+    data["url"] = url
     data["file"] = {}
-    data["file"]["filename"] = posixpath.basename(parsed.url)
-    data["file"]["project"] = _value_or_none(parsed.project_name)
-    data["file"]["version"] = _value_or_none(parsed.version)
-    data["file"]["type"] = _value_or_none(parsed.package_type)
+    data["file"]["filename"] = posixpath.basename(url)
+    data["file"]["project"] = parsed.get("project_name")
+    data["file"]["version"] = parsed.get("version")
+    data["file"]["type"] = parsed.get("package_type")
 
-    if parsed[0] == "download":
-        data["project"] = _value_or_none(parsed.project_name)
-        result = _cattr.structure(data, Download)
-    elif parsed[0] == "simple":
-        data["project"] = parsed.url.split("/")[2]
+    if simple:
+        data["project"] = url.split("/")[2]
         result = _cattr.structure(data, Simple)
     else:
-        # MESSAGE can only match a "download" or "simple" header today, but guard
-        # against a future grammar being added without a matching branch here --
-        # fail cleanly instead of an UnboundLocalError on `result` below.
-        raise UnparseableEvent("{!r} unexpected event header {!r}".format(message, parsed[0]))
+        data["project"] = parsed["project_name"]
+        result = _cattr.structure(data, Download)
 
     try:
-        ua = user_agents.parse(parsed.user_agent)
+        ua = user_agents.parse(parsed["user_agent"])
         if ua is None:
             return  # Ignored user agents mean we'll skip trying to log this event
     except user_agents.UnknownUserAgentError:
