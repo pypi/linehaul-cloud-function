@@ -1,6 +1,5 @@
 cattrs
 packaging
-pyparsing
 google-cloud-storage
 google-cloud-bigquery
 google-cloud-pubsub
