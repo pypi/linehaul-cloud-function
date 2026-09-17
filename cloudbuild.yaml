@@ -1,13 +1,21 @@
+# --set-env-vars replaces the full set on each deploy; keep the lists complete.
+# BIGQUERY_DATASET is publisher-only on purpose.
 steps:
 - name: 'gcr.io/cloud-builders/gcloud'
   args: [
     'functions', 'deploy', 'linehaul-ingestor-v2',
     '--gen2',
+    '--region', 'us-central1',
     '--trigger-resource', 'linehaul-logs',
     '--trigger-event', 'google.storage.object.finalize',
     '--runtime', 'python311',
     '--source', '.',
     '--entry-point', 'process_fastly_log',
+    '--service-account', 'linehaul-ingestor@the-psf.iam.gserviceaccount.com',
+    '--memory', '1024MB',
+    '--timeout', '540s',
+    '--set-env-vars', 'RESULT_BUCKET=linehaul-bigquery-data',
+    '--set-secrets', 'SENTRY_DSN=projects/the-psf/secrets/linehaul-sentry-dsn:latest',
     '--retry'
   ]
   waitFor: ['-']
@@ -15,9 +23,14 @@ steps:
   args: [
     'functions', 'deploy', 'linehaul-publisher-v2',
     '--gen2',
+    '--region', 'us-central1',
     '--trigger-topic', 'linehaul-publisher-topic',
     '--runtime', 'python311',
     '--source', '.',
     '--entry-point', 'load_processed_files_into_bigquery',
+    '--service-account', 'linehaul-ingestor@the-psf.iam.gserviceaccount.com',
+    '--timeout', '540s',
+    '--set-env-vars', 'RESULT_BUCKET=linehaul-bigquery-data,BIGQUERY_SIMPLE_TABLE=simple_requests,BIGQUERY_DOWNLOAD_TABLE=file_downloads,BIGQUERY_DATASET=bigquery-public-data.pypi,PUBSUB_TOPIC=linehaul-publisher-topic,MAX_BLOBS_PER_RUN=1000',
+    '--set-secrets', 'SENTRY_DSN=projects/the-psf/secrets/linehaul-sentry-dsn:latest',
   ]
   waitFor: ['-']
