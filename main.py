@@ -163,16 +163,24 @@ def _delete_blobs(
     simple_prefix,
 ):
     if len(download_source_blobs) > 0:
-        with storage_client.batch():
+        with storage_client.batch(raise_exception=False) as batch:
             for blob in download_source_blobs:
                 blob.delete()
+        # Batch exposes individual responses only through _responses. Inspect
+        # every response: catching a batch-wide NotFound could hide other errors.
+        for response in batch._responses:
+            if response.status_code != 404 and not 200 <= response.status_code < 300:
+                raise exceptions.from_http_response(response)
         print(
             f"Deleted {len(download_source_blobs)} blobs from gs://{RESULT_BUCKET}/{download_prefix}"
         )
     if len(simple_source_blobs) > 0:
-        with storage_client.batch():
+        with storage_client.batch(raise_exception=False) as batch:
             for blob in simple_source_blobs:
                 blob.delete()
+        for response in batch._responses:
+            if response.status_code != 404 and not 200 <= response.status_code < 300:
+                raise exceptions.from_http_response(response)
         print(
             f"Deleted {len(simple_source_blobs)} blobs from gs://{RESULT_BUCKET}/{simple_prefix}"
         )

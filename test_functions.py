@@ -5,6 +5,10 @@ from pathlib import Path
 
 import pretend
 import pytest
+import requests
+from google.api_core import exceptions
+from google.auth.credentials import AnonymousCredentials
+from google.cloud import storage
 
 import main
 
@@ -224,7 +228,7 @@ def test_load_processed_files_into_bigquery(
 
     @contextlib.contextmanager
     def fake_batch(*a, **kw):
-        yield True
+        yield pretend.stub(_responses=[])
 
     storage_client_stub = pretend.stub(
         bucket=pretend.call_recorder(lambda a: bucket_stub),
@@ -282,3 +286,111 @@ def test_load_processed_files_into_bigquery(
         == [pretend.call()] * len(bigquery_dataset.split()) * expected_load_jobs
     )
     assert blob_stub.delete.calls == [pretend.call()] * expected_delete_calls
+
+
+@pytest.fixture
+def deletion_client():
+    # Exercise the real storage batch encoder/decoder without network access.
+    responses = []
+    sent_requests = []
+
+    def request(method, url, **kwargs):
+        sent_requests.append((method, url))
+        status, parts = responses.pop(0)
+        response = requests.Response()
+        response.status_code = status
+        response.request = requests.Request(method, url).prepare()
+        if status != 200:
+            response._content = b'{"error": {"message": "Batch request failed"}}'
+            return response
+        response.headers["Content-Type"] = "multipart/mixed; boundary=batch"
+        response._content = (
+            "".join(
+                "--batch\r\n"
+                "Content-Type: application/http\r\n\r\n"
+                f"HTTP/1.1 {code} Response\r\n"
+                "Content-Type: application/json\r\n\r\n"
+                f'{{"error": {{"message": "Object response {code}"}}}}\r\n'
+                for code in parts
+            )
+            + "--batch--\r\n"
+        ).encode()
+        return response
+
+    client = storage.Client(
+        project=GCP_PROJECT,
+        credentials=AnonymousCredentials(),
+        _http=pretend.stub(request=request),
+    )
+    return client, responses, sent_requests
+
+
+@pytest.mark.parametrize("blob_type", ["downloads", "simple"])
+def test_delete_blobs_ignores_missing_objects(deletion_client, blob_type):
+    client, responses, sent_requests = deletion_client
+    responses.append((200, [204, 404, 204]))
+    bucket = client.bucket(RESULT_BUCKET)
+    blobs = [bucket.blob(f"{blob_type}-{i}") for i in range(3)]
+
+    main._delete_blobs(
+        client,
+        blobs if blob_type == "downloads" else [],
+        "downloads-",
+        blobs if blob_type == "simple" else [],
+        "simple-",
+    )
+
+    assert len(sent_requests) == 1
+    assert not responses
+
+
+def test_delete_blobs_does_not_hide_other_errors(deletion_client):
+    client, responses, _ = deletion_client
+    responses.append((200, [404, 403]))
+    bucket = client.bucket(RESULT_BUCKET)
+
+    with pytest.raises(exceptions.Forbidden):
+        main._delete_blobs(
+            client,
+            [bucket.blob("missing"), bucket.blob("forbidden")],
+            "downloads-",
+            [],
+            "simple-",
+        )
+
+
+def test_delete_blobs_retries_partial_failure_and_continues(deletion_client):
+    client, responses, sent_requests = deletion_client
+    responses.extend(
+        [
+            (200, [404, 503]),
+            (200, [404, 204]),
+            (200, [204]),
+        ]
+    )
+    bucket = client.bucket(RESULT_BUCKET)
+
+    main._delete_blobs(
+        client,
+        [bucket.blob("missing"), bucket.blob("retry")],
+        "downloads-",
+        [bucket.blob("simple")],
+        "simple-",
+    )
+
+    assert len(sent_requests) == 3
+    assert not responses
+
+
+def test_delete_blobs_does_not_ignore_batch_endpoint_not_found(deletion_client):
+    client, responses, _ = deletion_client
+    responses.append((404, []))
+
+    with pytest.raises(exceptions.NotFound):
+        main._delete_blobs(
+            client,
+            [client.bucket(RESULT_BUCKET).blob("download")],
+            "downloads-",
+            [],
+            "simple-",
+        )
