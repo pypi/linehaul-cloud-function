@@ -13,6 +13,8 @@ steps:
     '--entry-point', 'process_fastly_log',
     '--service-account', 'linehaul-ingestor@the-psf.iam.gserviceaccount.com',
     '--memory', '1024MB',
+    '--cpu', '1',
+    '--concurrency', '2',
     '--timeout', '540s',
     '--set-env-vars', 'RESULT_BUCKET=linehaul-bigquery-data',
     '--set-secrets', 'SENTRY_DSN=projects/the-psf/secrets/linehaul-sentry-dsn:latest',
