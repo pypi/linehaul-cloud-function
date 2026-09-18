@@ -13,7 +13,7 @@ steps:
     '--entry-point', 'process_fastly_log',
     '--service-account', 'linehaul-ingestor@the-psf.iam.gserviceaccount.com',
     '--memory', '1024MB',
-    '--cpu', '1',
+    '--cpu', '1', # Concurrency above 1 requires at least 1 vCPU.
     '--concurrency', '2',
     '--timeout', '540s',
     '--set-env-vars', 'RESULT_BUCKET=linehaul-bigquery-data',
