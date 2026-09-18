@@ -201,10 +201,10 @@ def test_load_processed_files_into_bigquery(
         name="blobname", bucket=bucket, delete=pretend.call_recorder(lambda: None)
     )
 
-    past_partition = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).strftime(
-        "%Y%m%d"
-    )
-    partition = datetime.datetime.utcnow().strftime("%Y%m%d")
+    past_partition = (
+        datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+    ).strftime("%Y%m%d")
+    partition = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
 
     def _generate_blob_list(prefix, max_results):
         if "simple" in prefix:
