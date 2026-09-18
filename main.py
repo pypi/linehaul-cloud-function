@@ -86,7 +86,7 @@ def process_fastly_log(data, context):
         simple_results_file = stack.enter_context(NamedTemporaryFile())
         download_results_file = stack.enter_context(NamedTemporaryFile())
 
-        min_timestamp = datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc)
+        min_timestamp = datetime.datetime.now(datetime.timezone.utc)
         try:
             for line in input_file:
                 try:
@@ -217,9 +217,9 @@ def load_processed_files_into_bigquery(event, context):
         # Otherwise, this was triggered via cron, use the current time
         # checking the past day first
         past_partition = (
-            datetime.datetime.utcnow() - datetime.timedelta(days=1)
+            datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
         ).strftime("%Y%m%d")
-        partition = datetime.datetime.utcnow().strftime("%Y%m%d")
+        partition = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
 
     # Load the data into the dataset(s)
     job_config = bigquery.LoadJobConfig()
