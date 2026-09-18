@@ -176,6 +176,44 @@ class TestUvUserAgent:
         with pytest.raises(parser.UnableToParse):
             parser.UvUserAgent(f"uv/0.1.22 {json_blob}")
 
+
+class TestHatchUserAgent:
+    @given(st.text().filter(lambda i: not i.startswith("Hatch/")))
+    def test_not_hatch(self, ua):
+        with pytest.raises(parser.UnableToParse):
+            parser.HatchUserAgent(ua)
+
+    def test_no_json(self):
+        with pytest.raises(parser.UnableToParse):
+            parser.HatchUserAgent("Hatch/1.15.0")
+
+    @given(st.text(max_size=100).filter(lambda i: not _is_valid_json(i)))
+    def test_invalid_json(self, json_blob):
+        with pytest.raises(parser.UnableToParse):
+            parser.HatchUserAgent(f"Hatch/1.15.0 {json_blob} HTTPX/0.27.0")
+
+    def test_valid_with_trailing_httpx(self):
+        ua = (
+            "Hatch/1.15.0 "
+            '{"installer":{"name":"hatch","version":"1.15.0"},'
+            '"openssl_version":"OpenSSL 3.0.2 15 Mar 2022","python":"3.12.0"} '
+            "HTTPX/0.27.0"
+        )
+        result = parser.HatchUserAgent(ua)
+        assert result["installer"]["name"] == "hatch"
+        assert result["installer"]["version"] == "1.15.0"
+        assert result["python"] == "3.12.0"
+
+    def test_valid_without_trailing_httpx(self):
+        ua = (
+            "Hatch/1.15.0 "
+            '{"installer":{"name":"hatch","version":"1.15.0"},'
+            '"python":"3.12.0"}'
+        )
+        result = parser.HatchUserAgent(ua)
+        assert result["installer"]["name"] == "hatch"
+
+
 class TestParse:
     @given(st.text())
     def test_unknown_user_agent(self, user_agent):
