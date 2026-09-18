@@ -6,6 +6,7 @@ import json
 import gzip
 import zlib
 import shlex
+import uuid
 
 from tempfile import NamedTemporaryFile
 from contextlib import ExitStack
@@ -57,6 +58,8 @@ DOWNLOAD_TABLE = os.environ.get("BIGQUERY_DOWNLOAD_TABLE")
 MAX_BLOBS_PER_RUN = int(
     os.environ.get("MAX_BLOBS_PER_RUN", "1000")
 )  # Cannot exceed 10,000 per load, or 1,000 per batch call to delete blobs
+
+PUBLISHER_STATE = "publisher-state/active.json"
 
 prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads"}
 
@@ -204,6 +207,208 @@ def _fetch_blobs(bucket, blob_type="downloads", past_partition=None, partition=N
     return (source_blobs, prefix)
 
 
+def _read_publisher_state(bucket):
+    blob = bucket.get_blob(PUBLISHER_STATE)
+    if blob is None:
+        return {"version": 1, "batch": None, "followup": None}, 0
+    generation = blob.generation
+    state = json.loads(blob.download_as_text(if_generation_match=generation))
+    if state["version"] != 1:
+        raise ValueError("Unsupported publisher state version")
+    return state, generation
+
+
+def _write_publisher_state(bucket, state, generation):
+    try:
+        bucket.blob(PUBLISHER_STATE).upload_from_string(
+            json.dumps(state),
+            content_type="application/json",
+            if_generation_match=generation,
+        )
+    except exceptions.PreconditionFailed:
+        return False
+    return True
+
+
+def _new_publisher_batch(bucket, bigquery_client, partition, past_partition, followup):
+    sources = {}
+    for kind in ("downloads", "simple"):
+        blobs, source_prefix = _fetch_blobs(
+            bucket, blob_type=kind, past_partition=past_partition, partition=partition
+        )
+        sources[kind] = {
+            "prefix": source_prefix,
+            "blobs": [
+                {"name": blob.name, "generation": blob.generation} for blob in blobs
+            ],
+        }
+    if not any(source["blobs"] for source in sources.values()):
+        return None
+    if not DATASETS:
+        raise ValueError("BIGQUERY_DATASET must be configured before publishing")
+
+    batch_id = uuid.uuid4().hex
+    created_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    jobs = []
+    for dataset in DATASETS:
+        dataset_ref = bigquery.dataset.DatasetReference.from_string(
+            dataset, default_project=DEFAULT_PROJECT
+        )
+        for kind, table in (("downloads", DOWNLOAD_TABLE), ("simple", SIMPLE_TABLE)):
+            if not sources[kind]["blobs"]:
+                continue
+            jobs.append(
+                {
+                    "kind": kind,
+                    "table": str(dataset_ref.table(table)),
+                    "job_id": f"linehaul_{batch_id}_{len(jobs)}",
+                    "attempt": 0,
+                    "created_at": created_at,
+                    "complete": False,
+                }
+            )
+    return {
+        "partition": partition,
+        "sources": sources,
+        "jobs": jobs,
+        "project": bigquery_client.project,
+        "location": "US",
+        "followup": followup,
+    }
+
+
+def _get_publisher_job(bucket, bigquery_client, batch, job):
+    job_id = f"{job['job_id']}_{job['attempt']}"
+    identity = {"project": batch["project"], "location": batch["location"]}
+    try:
+        return bigquery_client.get_job(job_id, **identity)
+    except exceptions.NotFound:
+        # Job history is finite. An old missing job may have committed; never
+        # guess by submitting it again. Existing jobs can still be recovered.
+        age = datetime.datetime.now(
+            datetime.timezone.utc
+        ) - datetime.datetime.fromisoformat(job["created_at"])
+        if age >= datetime.timedelta(days=1):
+            raise RuntimeError(
+                f"Cannot safely submit missing job {job_id}: reconcile publisher state"
+            )
+
+    job_config = bigquery.LoadJobConfig()
+    job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
+    job_config.ignore_unknown_values = True
+    job_config.write_disposition = bigquery.WriteDisposition.WRITE_APPEND
+    source_uris = [
+        f"gs://{bucket.name}/{blob['name']}"
+        for blob in batch["sources"][job["kind"]]["blobs"]
+    ]
+    try:
+        return bigquery_client.load_table_from_uri(
+            source_uris, job["table"], job_id=job_id, job_config=job_config, **identity
+        )
+    except exceptions.Conflict:
+        # Another invocation submitted this exact attempt. Conflict is not
+        # success: its result must still be checked before deleting anything.
+        return bigquery_client.get_job(job_id, **identity)
+
+
+def _publish_followup(followup):
+    publisher = pubsub_v1.PublisherClient()
+    future = publisher.publish(
+        followup["topic"],
+        b"",
+        partition=followup["partition"],
+        continue_publishing="True",
+    )
+    print(future.result())
+
+
+def _run_publisher(
+    storage_client, bigquery_client, bucket, partition, past_partition, followup
+):
+    finished = False
+    while True:
+        try:
+            state, generation = _read_publisher_state(bucket)
+        except (exceptions.NotFound, exceptions.PreconditionFailed):
+            # The state changed between its metadata and content reads.
+            continue
+
+        if state["followup"] is not None:
+            # Durable outbox: a crash may duplicate a notification, but cannot
+            # lose the request to continue a historical partition.
+            _publish_followup(state["followup"])
+            state["followup"] = None
+            if _write_publisher_state(bucket, state, generation) and finished:
+                return
+            continue
+        if finished:
+            return
+
+        batch = state["batch"]
+        if batch is None:
+            # Read the idle generation BEFORE listing. A stale listing cannot
+            # replace a newer active or idle state, even after another run ends.
+            batch = _new_publisher_batch(
+                bucket, bigquery_client, partition, past_partition, followup
+            )
+            if batch is None:
+                return
+            state["batch"] = batch
+            _write_publisher_state(bucket, state, generation)
+            continue
+
+        if (
+            followup is not None
+            and batch["partition"] == partition
+            and batch["followup"] is None
+        ):
+            batch["followup"] = followup
+            _write_publisher_state(bucket, state, generation)
+            continue
+
+        pending = next((job for job in batch["jobs"] if not job["complete"]), None)
+        if pending is not None:
+            load_job = _get_publisher_job(bucket, bigquery_client, batch, pending)
+            try:
+                load_job.result()
+            except Exception:
+                if load_job.state == "DONE" and load_job.error_result is not None:
+                    # A failed load commits no rows. Only a confirmed terminal
+                    # failure permits a fresh attempt on a subsequent invocation.
+                    pending["attempt"] += 1
+                    pending["created_at"] = datetime.datetime.now(
+                        datetime.timezone.utc
+                    ).isoformat()
+                    _write_publisher_state(bucket, state, generation)
+                raise
+            pending["complete"] = True
+            if _write_publisher_state(bucket, state, generation):
+                print(f"Loaded {load_job.output_rows} rows into {pending['table']}")
+            continue
+
+        # Every destination's success is durable before any source is deleted.
+        downloads = batch["sources"]["downloads"]
+        simple = batch["sources"]["simple"]
+        _delete_blobs(
+            storage_client,
+            [
+                bucket.blob(blob["name"], generation=blob["generation"])
+                for blob in downloads["blobs"]
+            ],
+            downloads["prefix"],
+            [
+                bucket.blob(blob["name"], generation=blob["generation"])
+                for blob in simple["blobs"]
+            ],
+            simple["prefix"],
+        )
+        state["batch"] = None
+        state["followup"] = batch["followup"]
+        if _write_publisher_state(bucket, state, generation):
+            # Recover unrelated historical work first, then honor this request.
+            finished = batch["partition"] == partition
+
+
 @serverless_function
 def load_processed_files_into_bigquery(event, context):
     continue_publishing = False
@@ -221,81 +426,14 @@ def load_processed_files_into_bigquery(event, context):
         ).strftime("%Y%m%d")
         partition = datetime.datetime.utcnow().strftime("%Y%m%d")
 
-    # Load the data into the dataset(s)
-    job_config = bigquery.LoadJobConfig()
-    job_config.source_format = bigquery.SourceFormat.NEWLINE_DELIMITED_JSON
-    job_config.ignore_unknown_values = True
-
     storage_client = storage.Client()
     bucket = storage_client.bucket(RESULT_BUCKET)
-
-    bigquery_client = bigquery.Client()
-
-    download_source_blobs, download_prefix = _fetch_blobs(
-        bucket,
-        blob_type="downloads",
-        past_partition=past_partition,
-        partition=partition,
+    followup = None
+    if continue_publishing:
+        followup = {
+            "topic": f"projects/{DEFAULT_PROJECT}/topics/{PUBSUB_TOPIC}",
+            "partition": partition,
+        }
+    _run_publisher(
+        storage_client, bigquery.Client(), bucket, partition, past_partition, followup
     )
-    download_source_uris = [
-        f"gs://{blob.bucket.name}/{blob.name}" for blob in download_source_blobs
-    ]
-    simple_source_blobs, simple_prefix = _fetch_blobs(
-        bucket, blob_type="simple", past_partition=past_partition, partition=partition
-    )
-    simple_source_uris = [
-        f"gs://{blob.bucket.name}/{blob.name}" for blob in simple_source_blobs
-    ]
-
-    for DATASET in DATASETS:
-        dataset_ref = bigquery.dataset.DatasetReference.from_string(
-            DATASET, default_project=DEFAULT_PROJECT
-        )
-
-        if len(download_source_uris) > 0:
-            # Load the files for the downloads table
-            load_job = bigquery_client.load_table_from_uri(
-                download_source_uris,
-                dataset_ref.table(DOWNLOAD_TABLE),
-                job_id_prefix="linehaul_file_downloads",
-                location="US",
-                job_config=job_config,
-            )
-            load_job.result()
-            print(f"Loaded {load_job.output_rows} rows into {DATASET}:{DOWNLOAD_TABLE}")
-
-        if len(simple_source_uris) > 0:
-            # Load the files for the simple table
-            load_job = bigquery_client.load_table_from_uri(
-                simple_source_uris,
-                dataset_ref.table(SIMPLE_TABLE),
-                job_id_prefix="linehaul_simple_requests",
-                location="US",
-                job_config=job_config,
-            )
-            load_job.result()
-            print(f"Loaded {load_job.output_rows} rows into {DATASET}:{SIMPLE_TABLE}")
-
-    _delete_blobs(
-        storage_client,
-        download_source_blobs,
-        download_prefix,
-        simple_source_blobs,
-        simple_prefix,
-    )
-
-    if continue_publishing and (
-        len(download_source_blobs) > 0 or len(simple_source_blobs) > 0
-    ):
-        publisher = pubsub_v1.PublisherClient()
-        topic_path = publisher.topic_path(DEFAULT_PROJECT, PUBSUB_TOPIC)
-        print(
-            f"Publishing to {topic_path}: partition={partition},continue_publishing={str(continue_publishing)}"
-        )
-        future = publisher.publish(
-            topic_path,
-            b"",
-            partition=partition,
-            continue_publishing=str(continue_publishing),
-        )
-        print(future.result())

@@ -1,0 +1,11 @@
+{
+  "rule": [
+    {
+      "action": {"type": "Delete"},
+      "condition": {
+        "age": 14,
+        "matchesPrefix": ["processed/", "unprocessed/"]
+      }
+    }
+  ]
+}

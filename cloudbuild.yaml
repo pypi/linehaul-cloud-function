@@ -2,6 +2,13 @@
 # BIGQUERY_DATASET is publisher-only on purpose.
 steps:
 - name: 'gcr.io/cloud-builders/gcloud'
+  id: 'publisher-state-retention'
+  args: [
+    'storage', 'buckets', 'update', 'gs://linehaul-bigquery-data',
+    '--lifecycle-file', 'result-bucket-lifecycle.json',
+  ]
+  waitFor: ['-']
+- name: 'gcr.io/cloud-builders/gcloud'
   args: [
     'functions', 'deploy', 'linehaul-ingestor-v2',
     '--gen2',
@@ -33,4 +40,4 @@ steps:
     '--set-env-vars', 'RESULT_BUCKET=linehaul-bigquery-data,BIGQUERY_SIMPLE_TABLE=simple_requests,BIGQUERY_DOWNLOAD_TABLE=file_downloads,BIGQUERY_DATASET=bigquery-public-data.pypi,PUBSUB_TOPIC=linehaul-publisher-topic,MAX_BLOBS_PER_RUN=1000',
     '--set-secrets', 'SENTRY_DSN=projects/the-psf/secrets/linehaul-sentry-dsn:latest',
   ]
-  waitFor: ['-']
+  waitFor: ['publisher-state-retention']
