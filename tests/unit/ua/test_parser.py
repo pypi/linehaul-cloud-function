@@ -177,6 +177,17 @@ class TestUvUserAgent:
             parser.UvUserAgent(f"uv/0.1.22 {json_blob}")
 
 class TestParse:
+    @pytest.mark.parametrize(
+        "user_agent",
+        ["pip/experiment-package-gateway", "pip/", "uv/not-a-version"],
+    )
+    def test_malformed_version_is_unknown_without_parser_error(self, user_agent, caplog):
+        with caplog.at_level("ERROR", logger="linehaul.ua.impl"):
+            with pytest.raises(parser.UnknownUserAgentError):
+                parser.parse(user_agent)
+
+        assert not caplog.records
+
     @given(st.text())
     def test_unknown_user_agent(self, user_agent):
         with pytest.raises(parser.UnknownUserAgentError):
