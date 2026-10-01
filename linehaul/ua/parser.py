@@ -46,7 +46,10 @@ def Pip6UserAgent(user_agent):
     # This format was brand new in pip 6.0, so we'll need to restrict it
     # to only versions of pip newer than that.
     version_str = user_agent.split()[0].split("/", 1)[1]
-    version = packaging.version.parse(version_str)
+    try:
+        version = packaging.version.parse(version_str)
+    except packaging.version.InvalidVersion:
+        raise UnableToParse from None
     if version not in SpecifierSet(">=6", prereleases=True):
         raise UnableToParse
 
@@ -207,7 +210,10 @@ def UvUserAgent(user_agent):
     # This format was brand new in uv 0.1.22, so we'll need to restrict it
     # to only versions of uv newer than that.
     version_str = user_agent.split()[0].split("/", 1)[1]
-    version = packaging.version.parse(version_str)
+    try:
+        version = packaging.version.parse(version_str)
+    except packaging.version.InvalidVersion:
+        raise UnableToParse from None
     if version not in SpecifierSet(">=0.1.22", prereleases=True):
         raise UnableToParse
 
