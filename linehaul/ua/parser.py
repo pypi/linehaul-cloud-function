@@ -54,7 +54,7 @@ def Pip6UserAgent(user_agent):
         raise UnableToParse
 
     try:
-        return json.loads(user_agent.split(maxsplit=1)[1])
+        return json.loads(user_agent.split(" ", 1)[1])
     except (json.JSONDecodeError, UnicodeDecodeError, IndexError):
         raise UnableToParse from None
 
@@ -218,7 +218,7 @@ def UvUserAgent(user_agent):
         raise UnableToParse
 
     try:
-        return json.loads(user_agent.split(maxsplit=1)[1])
+        return json.loads(user_agent.split(" ", 1)[1])
     except (json.JSONDecodeError, UnicodeDecodeError, IndexError):
         raise UnableToParse from None
 
