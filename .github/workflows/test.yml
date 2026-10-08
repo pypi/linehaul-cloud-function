@@ -23,5 +23,11 @@ jobs:
       run: python -m pip install -r requirements-test.txt
     - name: Lint
       run: python -m mypy -p linehaul
+    - name: Cache Hypothesis database
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .hypothesis
+        key: hypothesis-${{ runner.os }}-${{ github.run_id }}
+        restore-keys: hypothesis-${{ runner.os }}-
     - name: Test
       run: python -m pytest test_functions.py tests
