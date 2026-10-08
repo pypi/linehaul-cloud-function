@@ -17,7 +17,7 @@ import cattr
 import pytest
 import yaml
 
-from hypothesis import given, strategies as st
+from hypothesis import example, given, strategies as st
 
 from linehaul.ua import parser
 from linehaul.ua.datastructures import UserAgent
@@ -71,6 +71,7 @@ class TestPip6UserAgent:
             parser.Pip6UserAgent(f"pip/{version}")
 
     @given(st.text(max_size=100).filter(lambda i: not _is_valid_json(i)))
+    @example("\x1f0")
     def test_invalid_json(self, json_blob):
         with pytest.raises(parser.UnableToParse):
             parser.Pip6UserAgent(f"pip/18.0 {json_blob}")
@@ -172,6 +173,7 @@ class TestUvUserAgent:
             parser.UvUserAgent(f"""uv/{version} {{"installer":{{"name":"uv","version":"{version}"}}}}""")
 
     @given(st.text(max_size=100).filter(lambda i: not _is_valid_json(i)))
+    @example("\x1f0")
     def test_invalid_json(self, json_blob):
         with pytest.raises(parser.UnableToParse):
             parser.UvUserAgent(f"uv/0.1.22 {json_blob}")
