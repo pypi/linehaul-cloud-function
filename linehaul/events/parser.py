@@ -70,12 +70,26 @@ _COMMON = (
     rf"{_WS}{_nullable('tls_cipher')}{_WS}\|"
 )
 
-# Two separate patterns rather than one alternation: stdlib re disallows
-# duplicate group names, even across alternation branches.
-MESSAGE_v3 = re.compile(
-    rf"\A{_WS}download{_COMMON}{_WS}{_nullable('project_name')}{_WS}\|"
-    rf"{_WS}{_nullable('version')}{_WS}\|{_WS}{_PACKAGE_TYPE}{_WS}\|{_TAIL}"
+_FILE = (
+    rf"{_WS}{_nullable('project_name')}{_WS}\|"
+    rf"{_WS}{_nullable('version')}{_WS}\|{_WS}{_PACKAGE_TYPE}{_WS}\|"
 )
+# An unset Range header is "(null)", an empty one is blank; both are None. The
+# byte count is capped at 18 digits so it always fits in BigQuery's INT64.
+_HTTP = (
+    rf"{_WS}(?P<method>{_WORD}){_WS}\|"
+    rf"{_WS}(?P<status_code>[0-9]{{3}}){_WS}\|"
+    rf"{_WS}(?P<bytes_served>[0-9]{{1,18}}+){_WS}\|"
+    rf"(?:{_WS}{_nullable('range_header')})?{_WS}\|"
+)
+
+# Separate patterns rather than one alternation: stdlib re disallows duplicate
+# group names, even across alternation branches. Both download formats share the
+# "download" prefix, so v4 is tried first. The user agent is last and may itself
+# contain "|", so a v3 line whose user agent looks like the HTTP fields is read
+# as v4, and a v4 line with malformed HTTP fields falls back to v3.
+MESSAGE_v4 = re.compile(rf"\A{_WS}download{_COMMON}{_FILE}{_HTTP}{_TAIL}")
+MESSAGE_v3 = re.compile(rf"\A{_WS}download{_COMMON}{_FILE}{_TAIL}")
 MESSAGE_SIMPLE = re.compile(rf"\A{_WS}simple{_COMMON}{_WS}\|{_WS}\|{_WS}\|{_TAIL}")
 
 
@@ -100,6 +114,17 @@ class File:
 
 
 @attr.s(slots=True, frozen=True)
+class HTTP:
+    method = attr.ib(validator=attr.validators.instance_of(str))
+    status_code = attr.ib(type=int)
+    bytes_served = attr.ib(type=int)
+    range_header = attr.ib(
+        default=None,
+        validator=attr.validators.optional(attr.validators.instance_of(str)),
+    )
+
+
+@attr.s(slots=True, frozen=True)
 class Download:
     timestamp = attr.ib(type=datetime)
     url = attr.ib(validator=attr.validators.instance_of(str))
@@ -118,6 +143,7 @@ class Download:
         validator=attr.validators.optional(attr.validators.instance_of(str)),
     )
     details = attr.ib(type=Optional[UserAgent], default=None)
+    http = attr.ib(type=Optional[HTTP], default=None)
 
 
 @attr.s(slots=True, frozen=True)
@@ -150,7 +176,7 @@ def parse(message):
     parsed = MESSAGE_SIMPLE.match(expanded)
     if parsed is None:
         simple = False
-        parsed = MESSAGE_v3.match(expanded)
+        parsed = MESSAGE_v4.match(expanded) or MESSAGE_v3.match(expanded)
         if parsed is None:
             raise UnparseableEvent("{!r} does not match a known event".format(message))
 
@@ -177,6 +203,13 @@ def parse(message):
         result = _cattr.structure(data, Simple)
     else:
         data["project"] = parsed["project_name"]
+        if parsed.get("method") is not None:
+            data["http"] = {
+                "method": parsed["method"],
+                "status_code": parsed["status_code"],
+                "bytes_served": parsed["bytes_served"],
+                "range_header": parsed["range_header"],
+            }
         result = _cattr.structure(data, Download)
 
     try:
