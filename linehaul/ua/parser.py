@@ -10,12 +10,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import json
 import logging
 import re
 
 import cattr
-import packaging.version
 
 from packaging.specifiers import SpecifierSet
 
@@ -36,6 +36,20 @@ class UnknownUserAgentError(ValueError):
 _parser = ParserSet()
 
 
+def _version_matcher(specifier):
+    # Installer versions repeat heavily within a log file, so cache the check rather
+    # than building a SpecifierSet and parsing the version on every line. contains()
+    # returns False for invalid version strings, so they are rejected without raising.
+    return functools.lru_cache(maxsize=4096)(
+        SpecifierSet(specifier, prereleases=True).contains
+    )
+
+
+_pip_6_or_newer = _version_matcher(">=6")
+_pip_1_4_to_6 = _version_matcher(">=1.4,<6")
+_uv_0_1_22_or_newer = _version_matcher(">=0.1.22")
+
+
 @_parser.register
 @ua_parser
 def Pip6UserAgent(user_agent):
@@ -46,11 +60,7 @@ def Pip6UserAgent(user_agent):
     # This format was brand new in pip 6.0, so we'll need to restrict it
     # to only versions of pip newer than that.
     version_str = user_agent.split()[0].split("/", 1)[1]
-    try:
-        version = packaging.version.parse(version_str)
-    except packaging.version.InvalidVersion:
-        raise UnableToParse from None
-    if version not in SpecifierSet(">=6", prereleases=True):
+    if not _pip_6_or_newer(version_str):
         raise UnableToParse
 
     try:
@@ -69,7 +79,7 @@ def Pip6UserAgent(user_agent):
 def Pip1_4UserAgent(*, version, impl_name, impl_version, system_name, system_release):
     # This format was brand new in pip 1.4, and went away in pip 6.0, so
     # we'll need to restrict it to only versions of pip between 1.4 and 6.0.
-    if version not in SpecifierSet(">=1.4,<6", prereleases=True):
+    if not _pip_1_4_to_6(version):
         raise UnableToParse
 
     data = {"installer": {"name": "pip", "version": version}}
@@ -210,11 +220,7 @@ def UvUserAgent(user_agent):
     # This format was brand new in uv 0.1.22, so we'll need to restrict it
     # to only versions of uv newer than that.
     version_str = user_agent.split()[0].split("/", 1)[1]
-    try:
-        version = packaging.version.parse(version_str)
-    except packaging.version.InvalidVersion:
-        raise UnableToParse from None
-    if version not in SpecifierSet(">=0.1.22", prereleases=True):
+    if not _uv_0_1_22_or_newer(version_str):
         raise UnableToParse
 
     try:
