@@ -91,8 +91,8 @@ def process_fastly_log(data, context):
             for line in input_file:
                 try:
                     res = parse(line.decode())
-                    min_timestamp = min(min_timestamp, res.timestamp)
                     if res is not None:
+                        min_timestamp = min(min_timestamp, res.timestamp)
                         if res.__class__.__name__ == Simple.__name__:
                             simple_results_file.write(
                                 json.dumps(_cattr.unstructure(res)).encode() + b"\n"
