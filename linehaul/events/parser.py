@@ -11,6 +11,7 @@
 # limitations under the License.
 
 import enum
+import functools
 import logging
 import posixpath
 import re
@@ -36,12 +37,18 @@ logger = logging.getLogger(__name__)
 # exception type is never surfaced to a human, so the richer aggregated error is
 # pure overhead here, and the parser tests assert the bare TypeError/ValueError.
 _cattr = cattr.Converter(detailed_validation=False)
-_cattr.register_structure_hook(
-    datetime,
-    lambda d, t: datetime.strptime(d[5:-4], "%d %b %Y %H:%M:%S").replace(
+
+
+# Lines in one log file share a handful of distinct timestamps, so caching skips
+# most strptime calls. datetimes are immutable, so sharing them is safe.
+@functools.lru_cache(maxsize=1024)
+def _parse_timestamp(value):
+    return datetime.strptime(value[5:-4], "%d %b %Y %H:%M:%S").replace(
         tzinfo=timezone.utc
-    ),
-)
+    )
+
+
+_cattr.register_structure_hook(datetime, lambda d, t: _parse_timestamp(d))
 
 
 class UnparseableEvent(Exception):
