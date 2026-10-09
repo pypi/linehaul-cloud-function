@@ -1,5 +1,6 @@
 import contextlib
 import datetime
+import threading
 from importlib import reload
 from pathlib import Path
 
@@ -141,6 +142,38 @@ def test_process_fastly_log_deletes_malformed_gzip(monkeypatch):
     assert storage_client_stub.bucket.calls == [pretend.call("my-bucket")]
     assert bucket_stub.get_blob.calls == [pretend.call("poison.log.gz")]
     assert get_blob_stub.delete.calls == [pretend.call()]
+
+
+@pytest.mark.parametrize("stalled", [True, False])
+def test_process_fastly_log_watchdog_exits_stalled_instance(monkeypatch, stalled):
+    exited = threading.Event()
+    exit_codes = []
+
+    def _exit(code):
+        exit_codes.append(code)
+        exited.set()
+
+    def _get_blob(name):
+        if stalled:
+            # Stands in for a stalled download/parse: only the watchdog ends it.
+            assert exited.wait(timeout=5)
+        return None
+
+    bucket_stub = pretend.stub(get_blob=_get_blob)
+    storage_client_stub = pretend.stub(bucket=lambda a: bucket_stub)
+    monkeypatch.setattr(
+        main, "storage", pretend.stub(Client=lambda: storage_client_stub)
+    )
+    monkeypatch.setattr(main, "WATCHDOG_SECONDS", 0.05)
+    monkeypatch.setattr(main.os, "_exit", _exit)
+
+    main.process_fastly_log(
+        {"name": "slow.log.gz", "bucket": "my-bucket"}, pretend.stub()
+    )
+    # A finished run must have disarmed its watchdog.
+    exited.wait(timeout=0.2)
+
+    assert exit_codes == ([1] if stalled else [])
 
 
 GCP_PROJECT = "my-gcp-project"
