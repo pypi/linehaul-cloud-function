@@ -6,6 +6,7 @@ import json
 import gzip
 import zlib
 import shlex
+import threading
 
 from tempfile import NamedTemporaryFile
 from contextlib import ExitStack
@@ -60,9 +61,38 @@ MAX_BLOBS_PER_RUN = int(
 
 prefix = {Simple.__name__: "simple_requests", Download.__name__: "file_downloads"}
 
+# Cloud Run ends a request at its timeout but leaves the handler thread running and
+# keeps routing new requests to the same instance. When an instance stalls (on
+# 2026-09-30 four instances dropped from ~1,500 to ~40 lines/s for 25 minutes),
+# every request on it times out while the abandoned work keeps competing for CPU.
+# Healthy runs finish well under this, so exiting the process here kills the stalled
+# work and makes Cloud Run replace the instance; Eventarc retries the events.
+WATCHDOG_SECONDS = 300
+
+
+def _exit_stalled_instance(name):
+    print(
+        f"Still processing {name} after {WATCHDOG_SECONDS}s; exiting so Cloud Run "
+        "replaces this instance",
+        flush=True,
+    )
+    os._exit(1)
+
 
 @serverless_function
 def process_fastly_log(data, context):
+    watchdog = threading.Timer(
+        WATCHDOG_SECONDS, _exit_stalled_instance, args=(data["name"],)
+    )
+    watchdog.daemon = True
+    watchdog.start()
+    try:
+        _process_fastly_log(data)
+    finally:
+        watchdog.cancel()
+
+
+def _process_fastly_log(data):
     storage_client = storage.Client()
     file_name = os.path.basename(data["name"]).rstrip(".log.gz")
 
@@ -91,8 +121,8 @@ def process_fastly_log(data, context):
             for line in input_file:
                 try:
                     res = parse(line.decode())
-                    min_timestamp = min(min_timestamp, res.timestamp)
                     if res is not None:
+                        min_timestamp = min(min_timestamp, res.timestamp)
                         if res.__class__.__name__ == Simple.__name__:
                             simple_results_file.write(
                                 json.dumps(_cattr.unstructure(res)).encode() + b"\n"
