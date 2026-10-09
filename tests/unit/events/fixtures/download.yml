@@ -71,8 +71,9 @@
     details: null
 
 
-# The user agent is everything after the 9th pipe, taken verbatim -- it may
-# contain pipes and "@", both of which are illegal in every other field.
+# The user agent is everything after the 9th pipe (13th with the HTTP fields),
+# taken verbatim -- it may contain pipes and "@", both of which are illegal in
+# every other field.
 - event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|Wget/1.20.3 | curl@example.com | thing
   result:
     timestamp: Fri, 20 Jul 2018 02:19:19 GMT
@@ -125,7 +126,8 @@
 
 
 # "@" is not a legal character in any of the first nine fields, so a line
-# containing one anywhere but in the user agent is unparseable.
+# containing one anywhere there is unparseable. (One in the HTTP fields instead
+# falls back to the format without them, see below.)
 - event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/foo@bar/x-1.0.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
   result: !!python/name:linehaul.events.parser.UnparseableEvent ''
 - event: download|Fri, 20 Jul 2018 02:19:19 GMT|J@|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
@@ -409,3 +411,176 @@
 # Non ASCII characters are not legal in any of the first nine fields.
 - event: "download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|caf\xE9|1.0.3|sdist|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)"
   result: !!python/name:linehaul.events.parser.UnparseableEvent ''
+
+
+# v4 adds HTTP method, status code, bytes served and Range header before the user agent.
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|GET|200|12345|(null)|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    http:
+      method: GET
+      status_code: 200
+      bytes_served: 12345
+      range_header: null
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|GET|206|1024|bytes=0-1023|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    http:
+      method: GET
+      status_code: 206
+      bytes_served: 1024
+      range_header: bytes=0-1023
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+# An empty Range header counts as absent.
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|OPTIONS|200|0||bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    http:
+      method: OPTIONS
+      status_code: 200
+      bytes_served: 0
+      range_header: null
+    details:
+      installer:
+        name: bandersnatch
+        version: 2.2.1
+
+# Both formats share the download prefix, so malformed HTTP fields (an empty method,
+# or a non-numeric status code or byte count) fall back to the original format: the
+# HTTP fields end up in the front of the user agent, which usually stops it parsing
+# (unanchored user agent patterns like pex's can still match).
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist||200|12345|(null)|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    http: null
+    details: null
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|GET|OK|12345|(null)|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    http: null
+    details: null
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|GET|200|(null)|(null)|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    http: null
+    details: null
+
+# A user agent that looks like the HTTP fields is read as them.
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|GET|200|12345|(null)|Not a real user agent
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    http:
+      method: GET
+      status_code: 200
+      bytes_served: 12345
+      range_header: null
+    details: null
+# Out of range status codes and byte counts don't match the HTTP fields either.
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|GET|2000|12345|(null)|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    http: null
+    details: null
+- event: download|Fri, 20 Jul 2018 02:19:19 GMT|JP|/packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz|TLSv1.2|ECDHE-RSA-AES128-GCM-SHA256|cfn-flip|1.0.3|sdist|GET|200|99999999999999999999|(null)|bandersnatch/2.2.1 (cpython 3.7.0-final0, Darwin x86_64)
+  result:
+    timestamp: Fri, 20 Jul 2018 02:19:19 GMT
+    url: /packages/ba/c8/a928c55457441c87366eb2423efca9aa0f46380994fd8a476153493c319a/cfn_flip-1.0.3.tar.gz
+    project: cfn-flip
+    file:
+      filename: cfn_flip-1.0.3.tar.gz
+      project: cfn-flip
+      version: 1.0.3
+      type: sdist
+    tls_protocol: TLSv1.2
+    tls_cipher: ECDHE-RSA-AES128-GCM-SHA256
+    country_code: JP
+    http: null
+    details: null
