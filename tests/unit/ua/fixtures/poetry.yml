@@ -10,3 +10,64 @@
     system:
       name: Linux
       release: 5.10.16.3-microsoft-standard-WSL2
+
+# Poetry JSON Format
+
+# OSX Example
+- ua: 'poetry/2.5.1 {"ci":null,"cpu":"arm64","distro":{"name":"macOS","version":"26.7.1"},"implementation":{"name":"CPython","version":"3.13.2"},"installer":{"name":"poetry","version":"2.5.1"},"openssl_version":"OpenSSL 3.0.15 3 Sep 2024","python":"3.13.2","system":{"name":"Darwin","release":"25.6.0"}}'
+  result:
+    installer:
+      name: poetry
+      version: '2.5.1'
+    python: 3.13.2
+    implementation:
+      name: CPython
+      version: 3.13.2
+    distro:
+      name: macOS
+      version: 26.7.1
+    system:
+      name: Darwin
+      release: 25.6.0
+    cpu: arm64
+    openssl_version: OpenSSL 3.0.15 3 Sep 2024
+
+# Linux (Ubuntu) Example
+- ua: 'poetry/2.5.1 {"ci":true,"cpu":"x86_64","distro":{"id":"noble","libc":{"lib":"glibc","version":"2.39"},"name":"Ubuntu","version":"24.04"},"implementation":{"name":"CPython","version":"3.12.3"},"installer":{"name":"poetry","version":"2.5.1"},"openssl_version":"OpenSSL 3.0.13 30 Jan 2024","python":"3.12.3","system":{"name":"Linux","release":"6.8.0-1017-azure"}}'
+  result:
+    installer:
+      name: poetry
+      version: '2.5.1'
+    python: 3.12.3
+    implementation:
+      name: CPython
+      version: 3.12.3
+    distro:
+      name: Ubuntu
+      version: '24.04'
+      id: noble
+      libc:
+        lib: glibc
+        version: '2.39'
+    system:
+      name: Linux
+      release: 6.8.0-1017-azure
+    cpu: x86_64
+    openssl_version: OpenSSL 3.0.13 30 Jan 2024
+    ci: true
+
+# Windows Example
+- ua: 'poetry/2.5.1 {"ci":null,"cpu":"AMD64","implementation":{"name":"PyPy","version":"7.3.19"},"installer":{"name":"poetry","version":"2.5.1"},"openssl_version":"OpenSSL 3.0.15 3 Sep 2024","python":"3.11.11","system":{"name":"Windows","release":"11"}}'
+  result:
+    installer:
+      name: poetry
+      version: '2.5.1'
+    python: 3.11.11
+    implementation:
+      name: PyPy
+      version: 7.3.19
+    system:
+      name: Windows
+      release: '11'
+    cpu: AMD64
+    openssl_version: OpenSSL 3.0.15 3 Sep 2024

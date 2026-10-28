@@ -188,7 +188,9 @@ def PDMUserAgent(*, version, impl_name, impl_version):
 
 @_parser.register
 @regex_ua_parser(
-    r"^poetry/(?P<version>\S+) (?P<impl_name>\S+)/(?P<impl_version>\S+) "
+    # The negative lookahead keeps this from matching the JSON format, which is
+    # handled by PoetryJsonUserAgent.
+    r"^poetry/(?P<version>\S+) (?!\{)(?P<impl_name>\S+)/(?P<impl_version>\S+) "
     r"(?P<system_name>\S+)/(?P<system_release>\S+)?$"
 )
 def PoetryUserAgent(*, version, impl_name, impl_version, system_name, system_release):
@@ -197,6 +199,24 @@ def PoetryUserAgent(*, version, impl_name, impl_version, system_name, system_rel
         "implementation": {"name": impl_name, "version": impl_version},
         "system": {"name": system_name, "release": system_release},
     }
+
+
+@_parser.register
+@ua_parser
+def PoetryJsonUserAgent(user_agent):
+    # We're only concerned about Poetry user agents that use the same JSON format as
+    # pip and uv, the older format is handled by PoetryUserAgent.
+    if not user_agent.startswith("poetry/"):
+        raise UnableToParse
+
+    data = user_agent.split(" ", 1)[1] if " " in user_agent else ""
+    if not data.startswith("{"):
+        raise UnableToParse
+
+    try:
+        return json.loads(data)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise UnableToParse from None
 
 
 @_parser.register
