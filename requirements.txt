@@ -12,9 +12,9 @@ cattrs==26.2.1 \
     --hash=sha256:679132bfdc225c5ee40c024fc42519954767c387f950dc6751946c586bccdc6d \
     --hash=sha256:a12aaa3453dc8f633a815293179f08b7421ed18d2575c459c3c736f840beac24
     # via -r requirements.in
-certifi==2026.2.25 \
-    --hash=sha256:027692e4402ad994f1c42e52a4997a9763c646b73e4096e4d5d6db8af1d6f0fa \
-    --hash=sha256:e887ab5cee78ea814d3472169153c2d12cd43b14bd03329a39a9c6e2e80bfba7
+certifi==2026.10.19 \
+    --hash=sha256:035c1e85572b141bf1c3a3eff0e33a8eb74917522f2559075ff8d2fea780a1ae \
+    --hash=sha256:42d35340cc5b9ba78e818ddbff0c5b1c2b779de448a340fd1b989f5fa8670e1b
     # via
     #   requests
     #   sentry-sdk
