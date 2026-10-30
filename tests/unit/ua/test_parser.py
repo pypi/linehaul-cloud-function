@@ -178,6 +178,38 @@ class TestUvUserAgent:
         with pytest.raises(parser.UnableToParse):
             parser.UvUserAgent(f"uv/0.1.22 {json_blob}")
 
+class TestPoetryJsonUserAgent:
+    @given(st.text().filter(lambda i: not i.startswith("poetry/")))
+    def test_not_poetry(self, ua):
+        with pytest.raises(parser.UnableToParse):
+            parser.PoetryJsonUserAgent(ua)
+
+    @pytest.mark.parametrize(
+        "ua",
+        ["poetry/", "poetry/2.5.1", "poetry/1.1.11 CPython/3.9.2 Linux/5.10.16"],
+    )
+    def test_not_json_format(self, ua):
+        with pytest.raises(parser.UnableToParse):
+            parser.PoetryJsonUserAgent(ua)
+
+    @given(st.text(max_size=100).filter(lambda i: not _is_valid_json(i)))
+    @example("{")
+    def test_invalid_json(self, json_blob):
+        with pytest.raises(parser.UnableToParse):
+            parser.PoetryJsonUserAgent(f"poetry/2.5.1 {json_blob}")
+
+    @pytest.mark.parametrize(
+        "ua",
+        [
+            'poetry/2.5.1 {"installer":{"name":"poetry","version":"2.5.1"}}',
+            # A JSON payload that would otherwise also match the older format.
+            'poetry/2.5.1 {"a":"b/c","openssl_version":"LibreSSL d/e"}',
+        ],
+    )
+    def test_not_parsed_as_older_format(self, ua):
+        with pytest.raises(parser.UnableToParse):
+            parser.PoetryUserAgent(ua)
+
 class TestParse:
     @pytest.mark.parametrize(
         "user_agent",
