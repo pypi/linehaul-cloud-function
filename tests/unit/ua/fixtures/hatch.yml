@@ -1,0 +1,90 @@
+# Hatch format: Hatch/{version} {json} HTTPX/{httpx_version}
+
+# Linux (Ubuntu, CI, full distro with libc)
+- ua: 'Hatch/1.15.0 {"ci":true,"cpu":"x86_64","distro":{"id":"jammy","libc":{"lib":"glibc","version":"2.35"},"name":"Ubuntu","version":"22.04"},"implementation":{"name":"CPython","version":"3.12.0"},"installer":{"name":"hatch","version":"1.15.0"},"openssl_version":"OpenSSL 3.0.2 15 Mar 2022","python":"3.12.0","system":{"name":"Linux","release":"6.5.0-1016-azure"}} HTTPX/0.27.0'
+  result:
+    installer:
+      name: hatch
+      version: '1.15.0'
+    python: 3.12.0
+    implementation:
+      name: CPython
+      version: 3.12.0
+    distro:
+      name: Ubuntu
+      version: 22.04
+      id: jammy
+      libc:
+        lib: glibc
+        version: 2.35
+    system:
+      name: Linux
+      release: 6.5.0-1016-azure
+    cpu: x86_64
+    openssl_version: OpenSSL 3.0.2 15 Mar 2022
+    ci: true
+
+# macOS (no CI)
+- ua: 'Hatch/1.15.0 {"ci":null,"cpu":"arm64","distro":{"name":"macOS","version":"14.4"},"implementation":{"name":"CPython","version":"3.12.2"},"installer":{"name":"hatch","version":"1.15.0"},"openssl_version":"LibreSSL 3.3.6","python":"3.12.2","system":{"name":"Darwin","release":"23.2.0"}} HTTPX/0.27.0'
+  result:
+    installer:
+      name: hatch
+      version: '1.15.0'
+    python: 3.12.2
+    implementation:
+      name: CPython
+      version: 3.12.2
+    distro:
+      name: macOS
+      version: 14.4
+    system:
+      name: Darwin
+      release: 23.2.0
+    cpu: arm64
+    openssl_version: LibreSSL 3.3.6
+
+# Windows (CI, no distro)
+- ua: 'Hatch/1.15.0 {"ci":true,"cpu":"AMD64","implementation":{"name":"CPython","version":"3.12.0"},"installer":{"name":"hatch","version":"1.15.0"},"python":"3.12.0","system":{"name":"Windows","release":"2022Server"}} HTTPX/0.27.0'
+  result:
+    installer:
+      name: hatch
+      version: '1.15.0'
+    python: 3.12.0
+    implementation:
+      name: CPython
+      version: 3.12.0
+    system:
+      name: Windows
+      release: 2022Server
+    cpu: AMD64
+    ci: true
+
+# PyPy runtime
+- ua: 'Hatch/1.15.0 {"ci":null,"cpu":"x86_64","implementation":{"name":"PyPy","version":"7.3.15"},"installer":{"name":"hatch","version":"1.15.0"},"python":"3.10.14","system":{"name":"Linux","release":"6.1.0"}} HTTPX/0.27.0'
+  result:
+    installer:
+      name: hatch
+      version: '1.15.0'
+    python: 3.10.14
+    implementation:
+      name: PyPy
+      version: 7.3.15
+    system:
+      name: Linux
+      release: 6.1.0
+    cpu: x86_64
+
+# Minimal (no distro, no openssl)
+- ua: 'Hatch/1.15.0 {"ci":null,"cpu":"x86_64","implementation":{"name":"CPython","version":"3.12.0"},"installer":{"name":"hatch","version":"1.15.0"},"python":"3.12.0","system":{"name":"Linux","release":"6.1.0"}} HTTPX/0.27.0'
+  result:
+    installer:
+      name: hatch
+      version: '1.15.0'
+    python: 3.12.0
+    implementation:
+      name: CPython
+      version: 3.12.0
+    system:
+      name: Linux
+      release: 6.1.0
+    cpu: x86_64
